@@ -1,0 +1,53 @@
+{
+  "author": "Diamond Systems",
+  "manifest_version": 2,
+  "name": "Block urls",
+  "version": "1.0.0",
+  "description": "Block urls.",
+  "default_locale": "en",
+  "icons": {
+    "16":  "icons/icon_16.png",
+    "20":  "icons/icon_20.png",
+    "24":  "icons/icon_24.png",
+    "32":  "icons/icon_32.png",
+    "48":  "icons/icon_48.png",
+    "64":  "icons/icon_64.png",
+    "128": "icons/icon_128.png",
+    "256": "icons/icon_256.png",
+    "512": "icons/icon_512.png"
+  },
+  "browser_action": {
+    "browser_style": false,
+    "default_icon": {
+      "48":  "icons/icon_48.png",
+      "128": "icons/icon_128.png"
+    },
+    "default_title": "Block urls"
+  },
+  "background": {
+    "scripts": [
+      "background/background.js"
+    ]
+  },
+  "options_ui": {
+    "browser_style": false,
+    "open_in_tab": true,
+    "page": "pages/options.html"
+  },
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
+  ],
+  "commands": {
+    "open-settings": {
+      "suggested_key": {
+        "default": "Alt+Shift+1"
+      },
+      "description": "Open Block urls settings"
+    }
+  }
+}
