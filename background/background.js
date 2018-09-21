@@ -49,7 +49,9 @@ var objDS = objDS || {
 
     addAllTabs: function(urls)
     {
+        var me = this;
         chrome.webRequest.onBeforeRequest.addListener(function(info) {
+            me.addBlockUrlStatistics(info.tabId, info.url);
             return {cancel: true};
         }, {urls: urls}, ["blocking"]);
     },
@@ -60,12 +62,10 @@ var objDS = objDS || {
             me = this;
 
         chrome.webRequest.onBeforeRequest.addListener(function(info) {
-            if (x1 === 1)
-                return {cancel: (me.tabUrls[tabs[0]].tabUrl !== me.tabs[info.tabId].tabUrl)};
-
             for (var i=0;i<x1; i++)
                 if (me.tabUrls[tabs[i]].tabUrl === me.tabs[info.tabId].tabUrl)
                     return {cancel: false};
+            me.addBlockUrlStatistics(info.tabId, info.url);
             return {cancel: true};
         }, {urls: [url]}, ["blocking"]);
     },
@@ -96,7 +96,9 @@ var objDS = objDS || {
 
         // save tab url
         this.tabs[tabId] = {
-            'tabUrl': url
+            tabUrl: url,
+            blockUrls: {},
+            buCnt: 0
         };
 
         // check query tabs count
@@ -137,8 +139,11 @@ var objDS = objDS || {
         }
         if (blockUrls.length)
         {
-            var fnName = 'fn_'+tabId;
+            var fnName = 'fn_'+tabId,
+                me = this;
+
             this.tabs[tabId][fnName] = function(info) {
+                me.addBlockUrlStatistics(info.tabId, info.url);
                 return {cancel: true};
             };
             chrome.webRequest.onBeforeRequest.addListener(this.tabs[tabId][fnName], {urls: blockUrls, tabId: tabId}, ["blocking"]);
@@ -164,6 +169,18 @@ var objDS = objDS || {
         });
     },
 
+    addBlockUrlStatistics: function (tabId, url)
+    {
+        // Show count block urls
+        chrome.browserAction.setBadgeText({
+            text: (++this.tabs[tabId].buCnt).toString(),
+            tabId: tabId
+        });
+        // Save url info
+        var bu = this.tabs[tabId].blockUrls;
+        bu[url] = (url in bu) ? bu[url]+1 : 1;
+    },
+
     startLogic: function()
     {
         var me = this;
@@ -184,6 +201,12 @@ var objDS = objDS || {
         chrome.tabs.onReplaced.addListener(function (addedTabId, removedTabId) {
             me.deleteTab(removedTabId);
         });
+
+        //============ TESTs ============//
+
+        // chrome.browserAction.onClicked.addListener(function (tab) {
+        //     console.log(tab);
+        // });
     },
 
     init: function()
