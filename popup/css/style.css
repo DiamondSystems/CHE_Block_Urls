@@ -1,0 +1,59 @@
+button > img {
+    padding: 0;
+    margin-right: 5px;
+    margin-top: -4px;
+}
+
+/**
+ * No blocking links
+ *==========================================*/
+
+#no_list {
+    padding: 20px 2px;
+    text-align: center;
+    font-size: 22px;
+    color: green;
+    background: #dff7df;
+    border-radius: 2px;
+    margin-bottom: 1px;
+}
+
+/**
+ * Block URLs table
+ *==========================================*/
+
+#block_list_table table {
+    margin-bottom: 2px;
+}
+#block_list_table table tbody {
+    font-size: 12px;
+}
+#block_list_table table thead,
+#block_list_table table tbody td:nth-of-type(2) {
+    text-align: center;
+}
+
+/**
+ * Footer
+ *==========================================*/
+
+body > footer {
+    min-width: 260px;
+    margin: 0;
+    background: #dfe0ff;
+    padding: 3px;
+    border-radius: 2px;
+}
+.footer_logo {
+    float: right;
+    margin-top: 4px;
+    margin-right: 4px;
+}
+.footer_logo > img {
+    margin-top: -4px;
+    margin-right: 4px;
+}
+.footer_logo > span {
+    color: #10b2cc;
+    font-weight: bold;
+}

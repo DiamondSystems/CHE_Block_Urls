@@ -1,7 +1,11 @@
 /**
- * Main object
+ * Main background object
+ *
+ * @var {object} chrome
+ *
+ * @author DiamondSystems <me@diamondsystems.org>
  */
-var objDS = objDS || {
+var objDsBg = objDsBg || {
     tabUrls: this.tabUrls || {},
     tabUrlsQ: [],
     urls: this.urls || {},
@@ -85,12 +89,17 @@ var objDS = objDS || {
         }
     },
 
-    addTab: function(tabId, url)
+    addTab: function(tabId, url, isLoading)
     {
         // check tab
         if (tabId in this.tabs) {
-            if (this.tabs[tabId].tabUrl === url)
+            if (this.tabs[tabId].tabUrl === url) {
+                if (isLoading) {
+                    this.tabs[tabId].blockUrls = {};
+                    this.tabs[tabId].buCnt = 0;
+                }
                 return;
+            }
             this.deleteTab(tabId);
         }
 
@@ -165,7 +174,7 @@ var objDS = objDS || {
         chrome.tabs.query({}, function(tab) {
             var i,l=tab.length;
             for (i=0;i<l;i++)
-                me.addTab(tab[i].id, tab[i].url);
+                me.addTab(tab[i].id, tab[i].url, true);
         });
     },
 
@@ -193,7 +202,7 @@ var objDS = objDS || {
 
         // tab events
         chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
-            me.addTab(tabId, tab.url);
+            me.addTab(tabId, tab.url, ('status' in changeInfo && changeInfo.status === 'loading'));
         });
         chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
             me.deleteTab(tabId);
@@ -202,11 +211,10 @@ var objDS = objDS || {
             me.deleteTab(removedTabId);
         });
 
-        //============ TESTs ============//
+        // set default popup
+        chrome.browserAction.setPopup({'popup':'popup/popup.html'});
 
-        // chrome.browserAction.onClicked.addListener(function (tab) {
-        //     console.log(tab);
-        // });
+        //============ TESTs ============//
     },
 
     init: function()
@@ -218,7 +226,7 @@ var objDS = objDS || {
 
 //================ START ================//
 
-objDS.storage.set({
+objDsBg.storage.set({
     // https://developer.chrome.com/extensions/match_patterns
     urls: {
         '*://gc.kis.v2.scr.kaspersky-labs.com/*': {
@@ -261,4 +269,8 @@ objDS.storage.set({
         // '4': 'http://doc.extjs.loc/Ext.html'
     }
 });
-objDS.init();
+
+/**
+ * Init script
+ */
+objDsBg.init();
