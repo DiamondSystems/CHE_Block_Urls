@@ -7,10 +7,180 @@
 
     <link rel="shortcut icon" href="../img/favicon.ico" type="image/x-icon"/>
     <link rel="icon" href="../img/favicon.ico" type="image/x-icon"/>
-    <link href="./css/style.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="../lib/bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="page-options">
-ok
-<script src="./js/main.js"></script>
+<nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#"><img src="../icons/icon_24.png"><span>Block URLs</span></a>
+    <ul class="navbar-nav px-xl-1"></ul>
+    <input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">
+    <ul class="navbar-nav px-xl-1"></ul>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+            <div class="sidebar-sticky">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a data-menu-item="blocked_urls" class="nav-link" href="#">
+                            <span data-feather="link"></span>
+                            Blocked urls<span class="sr-only">(current)</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a data-menu-item="tabs" class="nav-link active" href="#">
+                            <span data-feather="map"></span>
+                            Tabs
+                        </a>
+                    </li>
+                </ul>
+
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Info</span>
+                </h6>
+                <ul class="nav flex-column mb-2">
+                    <li class="nav-item">
+                        <a data-menu-item="ext_info" class="nav-link" href="#">
+                            <span data-feather="info"></span>
+                            About the extension
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+            <div class="content-block content-blocked_urls">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Blocked urls</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle">
+                            <span data-feather="edit"></span>
+                            Show form
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Header</th>
+                            <th>Header</th>
+                            <th>Header</th>
+                            <th>Header</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>1,001</td>
+                            <td>Lorem</td>
+                            <td>ipsum</td>
+                            <td>dolor</td>
+                            <td>sit</td>
+                        </tr>
+                        <tr>
+                            <td>1,002</td>
+                            <td>amet</td>
+                            <td>consectetur</td>
+                            <td>adipiscing</td>
+                            <td>elit</td>
+                        </tr>
+                        <tr>
+                            <td>1,003</td>
+                            <td>Integer</td>
+                            <td>nec</td>
+                            <td>odio</td>
+                            <td>Praesent</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div><!-- .content-blocked_urls -->
+
+            <div class="content-block content-tabs">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Tabs</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button class="btn-add-form btn btn-sm btn-outline-secondary dropdown-toggle">
+                            <span data-feather="edit"></span>
+                            Show form
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div id="tabs_alert_add_url_success" class="col-sm-5 col-md-3 alert alert-success text-center" role="alert" style="display: none">
+                        Successfully added!
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div id="tabs_alert_add_url_error" class="col-sm-5 col-md-3 alert alert-danger text-center" role="alert" style="display: none">
+                        Such a URI already exists!
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                </div>
+                <div class="row mt-1 mb-3 add-form" style="display: none">
+                    <div class="col-md-1 pr-1">
+                        <label for="tabs_form_protocols">Protocol</label>
+                        <select class="custom-select d-block w-100" id="tabs_form_protocols">
+                            <option value="http">http</option>
+                            <option value="https">https</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 px-1">
+                        <label for="tabs_form_uri">
+                            <span class="font-italic font-weight-bold">Host</span> or
+                            <span class="font-italic font-weight-bold">Domain</span> or
+                            <span class="font-italic font-weight-bold">URL</span> or
+                            <span class="font-italic font-weight-bold">URI</span>
+                        </label>
+                        <input type="text" class="form-control" id="tabs_form_uri" placeholder="site.com or http://site.com or http://site.com/category">
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-md-3 px-1">
+                        <label for="tabs_form_urn">
+                            <span class="font-italic font-weight-bold">URN</span>
+                        </label>
+                        <input type="text" class="form-control" id="tabs_form_urn" placeholder="/category/auto/123">
+                    </div>
+                    <div class="col-md-1 px-1">
+                        <label for="tabs_form_all_urn">All after uri</label>
+                        <input type="checkbox" class="form-control" id="tabs_form_all_urn">
+                    </div>
+                    <div class="col-md-1 pl-1 pt-4">
+                        <button id="tabs_form_btn_add_url" class="btn btn-primary btn-md btn-block mt-1" type="submit">Add</button>
+                    </div>
+                </div>
+
+                <div id="tabs_table_urls" class="table-responsive pt-3 mb-5">
+                    <table class="table table-striped table-sm">
+                        <thead class="table-info">
+                        <tr>
+                            <th width="6%">#</th>
+                            <th width="10%">Key</th>
+                            <th>Tab URI</th>
+                            <th width="10%">Action</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div><!-- .content-tabs -->
+
+            <div class="content-block content-ext_info">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">About the extension</h1>
+                </div>
+            </div><!-- .content-ext_info -->
+        </main>
+    </div>
+</div>
+<script src="../lib/jQuery/jquery-3.3.1.min.js"></script>
+<script src="../lib/popper/popper.min.js"></script>
+<script src="../lib/bootstrap/bootstrap.min.js"></script>
+<script src="../lib/feather/feather.min.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
