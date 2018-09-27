@@ -66,11 +66,13 @@ var objSetDS = objSetDS || {
         var objTabs = {
             errHostIsShow: false,
 
-            objProtocol: $('#tabs_form_protocols'),
-            objHost:     $('#tabs_form_uri'),
-            objHostErr:  $('#tabs_form_uri').next(),
-            objUrn:      $('#tabs_form_urn'),
-            objUrnAll:   $('#tabs_form_all_urn'),
+            objProtocol:   $('#tabs_form_protocols'),
+            objHost:       $('#tabs_form_uri'),
+            objHostErr:    $('#tabs_form_uri').next(),
+            objUrn:        $('#tabs_form_urn'),
+            objUrnAll:     $('#tabs_form_all_urn'),
+            objViewing:    $('#tabs_form_viewing_uri'),
+            objViewingTxt: $('#tabs_form_viewing_uri > span:eq(1)'),
 
             tableSelector: '#tabs_table_urls tbody',
 
@@ -94,24 +96,25 @@ var objSetDS = objSetDS || {
             {
                 var valHost = $.trim(this.objHost.val()),
                     res = {
-                        protocol: '',
+                        protocol: $.trim(this.objProtocol.val()),
                         host:     '',
-                        urn:      '',
-                        urnAll:   ''
+                        urn:      $.trim(this.objUrn.val()).replace(/^\*$/, ''),
+                        urnAll:   (this.objUrnAll.prop('checked') ? '*' : '')
                     };
 
-                if (!valHost || valHost.match(/:\/\/$/))
-                    return res;
+                if (valHost && !valHost.match(/:\/\/$/))
+                {
+                    var mHost = valHost.match(/^(([\w]+):\/\/)?(.+?)(\/(.*?)(\*)?)?$/),
+                        sUrn  = ((mHost[5] !== undefined) ? mHost[5] : '');
 
-                var mHost = valHost.match(/^(([\w]+):\/\/)?(.+?)(\/(.*?)(\*)?)?$/),
-                    sUrn1 = ((mHost[5] !== undefined) ? mHost[5] : ''),
-                    sUrn2 = $.trim(this.objUrn.val()).replace(/^\*$/, '');
+                    if (mHost[2] !== undefined)
+                        res.protocol = mHost[2];
+                    if (mHost[6] !== undefined)
+                        res.urnAll = mHost[6];
 
-                res.protocol = ((mHost[2] !== undefined) ? mHost[2] : $.trim(this.objProtocol.val()));
-                res.host     = mHost[3];
-                res.urn      = ((sUrn1 && sUrn2) ? (sUrn1.replace(/\/+$/, '') +'/'+ sUrn2.replace(/^\/+/, '')) : (sUrn1 ? sUrn1 : sUrn2)).replace(/^\/+/, '');
-                res.urnAll   = ((mHost[6] !== undefined) ? mHost[6] : (this.objUrnAll.prop('checked') ? '*' : ''));
-
+                    res.host = mHost[3];
+                    res.urn  = ((sUrn && res.urn) ? (sUrn.replace(/\/+$/, '') +'/'+ res.urn.replace(/^\/+/, '')) : (sUrn ? sUrn : res.urn)).replace(/^\/+/, '');
+                }
                 return res;
             },
 
@@ -124,6 +127,16 @@ var objSetDS = objSetDS || {
                         '<button type="button" class="action-trash btn btn-danger btn-xs"><span data-feather="trash-2"></span></button>' +
                         '</div>'
                 ];
+            },
+
+            clearForm: function()
+            {
+                this.objProtocol.find('option[value="http"]').prop('selected', true);
+                this.objHost.val('');
+                this.objUrn.val('');
+                this.objUrnAll.prop('checked', false);
+
+                this.onChangeForm();
             },
 
             saveUrl: function(url)
@@ -151,18 +164,31 @@ var objSetDS = objSetDS || {
                     res.tabs[nKey] = url;
                     me.storage.set({ tabs: res.tabs });
 
-                    // clear form
-                    meTab.objProtocol.find('option[value="http"]').prop('selected', true);
-                    meTab.objHost.val('');
-                    meTab.objUrn.val('');
-                    meTab.objUrnAll.prop('checked', false);
-
                     // add url in table
+                    meTab.clearForm();
                     me.addTableRows(meTab.tableSelector, [meTab.getTableRow(nKey, url)]);
 
                     // show successful message
                     me.showAlert('#tabs_alert_add_url_success');
                 });
+            },
+
+            onChangeForm: function()
+            {
+                this.errHost(false);
+                var dataUri = this.parseUri(),
+                    isErr   = (! dataUri.host || ! dataUri.protocol.match(/^(https?)$/)),
+                    sUri    = dataUri.protocol+ '://'+ (dataUri.host || '???') +'/'+ dataUri.urn + dataUri.urnAll;
+
+                this.objViewingTxt.text(sUri);
+                if (isErr) {
+                    if (! this.objViewing.hasClass('alert-warning'))
+                        this.objViewing.removeClass('alert-success').addClass('alert-warning');
+                }
+                else {
+                    if (! this.objViewing.hasClass('alert-success'))
+                        this.objViewing.removeClass('alert-warning').addClass('alert-success');
+                }
             }
         };
 
@@ -176,9 +202,24 @@ var objSetDS = objSetDS || {
             me.addTableRows(objTabs.tableSelector, arrUrls);
         });
 
+        // Change protocol select
+        objTabs.objProtocol.change(function() {
+            objTabs.onChangeForm();
+        });
+
         // Change host input
         objTabs.objHost.on('input', function() {
-            objTabs.errHost(false);
+            objTabs.onChangeForm();
+        });
+
+        // Change URN input
+        objTabs.objUrn.on('input', function() {
+            objTabs.onChangeForm();
+        });
+
+        // Change All URN checkbox
+        objTabs.objUrnAll.change(function() {
+            objTabs.onChangeForm();
         });
 
         // Click add tab url
@@ -203,6 +244,11 @@ var objSetDS = objSetDS || {
                 return;
             }
             objTabs.objHost.focus();
+        });
+
+        // Click clear url from the form
+        $('#tabs_form_btn_clear_url').click(function() {
+            objTabs.clearForm();
         });
 
         // Click remove tab url
