@@ -24,6 +24,27 @@ var objSetDS = objSetDS || {
         return ((index?index+'_':'')+res);
     },
 
+    getDb: function(table, fun)
+    {
+        if (Array.isArray(table)) {
+            this.storage.get(table, function (res) {
+                fun(res);
+            });
+        }
+        else {
+            this.storage.get([table], function (res) {
+                if (typeof res[table] === "object")
+                    fun(res[table], Object.keys(res[table]).length);
+                else if (Array.isArray(res[table]))
+                    fun(res[table], res[table].length);
+                else if (res[table])
+                    fun(res[table],0);
+                else
+                    fun({},0);
+            });
+        }
+    },
+
     getActiveMenuItem: function()
     {
         return $('.sidebar-sticky .nav-link.active').data("menu-item");
@@ -45,7 +66,7 @@ var objSetDS = objSetDS || {
         });
 
         // Click add forms btn
-        $('.content-block button.btn-add-form').click(function() {
+        $('.content-block button.btn-show-form').click(function() {
             var $this = $(this),
                 objForm = $this.closest('.content-block').find('.add-form');
             if ($this.hasClass('active')) {
@@ -56,6 +77,250 @@ var objSetDS = objSetDS || {
                 objForm.stop().slideDown(300);
                 $this.addClass('active');
             }
+        });
+    },
+
+    setEventsBlockedUrls: function()
+    {
+        var me = this;
+
+        var objBU = {
+            errUrlIsShow:  false,
+            errTabsIsShow: false,
+
+            objUrl:        $('#burls_form_uri'),
+            objUrlErr:     $('#burls_form_uri').next(),
+            objUrlErrHelp: $('#burls_form_help'),
+            objCheckType:  $('#burls_form_check_type'),
+            objTabs:       $('#burls_form_tabs'),
+            objTabsLabel:  $('#burls_form_tabs').parent().children('label[for="burls_form_tabs"]'),
+            objTabsErr:    $('#burls_form_tabs').parent().children('.invalid-feedback'),
+
+            tableSelector: '#burls_table_urls tbody',
+
+            errUrl: function(txt)
+            {
+                if (!this.errUrlIsShow) {
+                    this.errUrlIsShow = true;
+                    this.objUrlErr.html(txt).stop().show(300);
+                }
+            },
+
+            errTabs: function(txt)
+            {
+                if (!this.errTabsIsShow) {
+                    this.errTabsIsShow = true;
+                    this.objTabsErr.html(txt).stop().show(300);
+                }
+            },
+
+            errHide: function()
+            {
+                if (this.errUrlIsShow || this.errTabsIsShow) {
+                    this.errUrlIsShow = false;
+                    this.errTabsIsShow = false;
+                    this.objUrlErr.html('').stop().hide(300);
+                    this.objTabsErr.html('').stop().hide(300);
+                }
+            },
+
+            getTableRow: function(key, url, type, tabs)
+            {
+                var typeName,
+                    strTabs = '',
+                    tabsCnt = tabs.length;
+
+                switch (type)
+                {
+                    case 'all':  typeName = 'All';
+                        tabsCnt = 0;
+                        strTabs = '&infin;';
+                        break;
+                    case 'list': typeName = 'List'; break;
+                    case 'none': typeName = 'None'; break;
+
+                    default: typeName = '---';
+                }
+
+                for (var i=0; i<tabsCnt; i++)
+                    strTabs += '<span class="badge badge-info">'+ tabs[i] +'</span> ';
+
+                return [
+                    typeName,
+                    url,
+                    strTabs,
+                    '<div class="burl-table-action" data-burl-key="'+ key +'">' +
+                    '<button type="button" class="action-trash btn btn-danger btn-xs"><span data-feather="trash-2"></span></button>' +
+                    '</div>'
+                ];
+            },
+
+            clearForm: function()
+            {
+                this.objUrl.val('');
+                this.objCheckType.find('option[value="all"]').prop('selected', true);
+                this.objTabs.find('option:selected').prop('selected', false).change();
+                this.objTabs.prop("disabled", true);
+                this.objTabsLabel.text('All tabs');
+                this.errHide();
+            },
+
+            parseUri: function()
+            {
+                var res = {
+                        url:      $.trim(this.objUrl.val()),
+                        protocol: '',
+                        host:     '',
+                        urn:      '',
+                        type:     $.trim(this.objCheckType.val()),
+                        tabs:     this.objTabs.val()
+                    },
+                    mUrl;
+
+                if (! Array.isArray(res.tabs) || res.type === 'all')
+                    res.tabs = [];
+
+                if (mUrl=res.url.match(/^([\w]+|\*):\/\/(.+?)\/(.*?)$/))
+                {
+                    res.protocol = mUrl[1];
+                    res.host     = mUrl[2];
+                    res.urn      = mUrl[3];
+                }
+                return res;
+            },
+
+            saveUrl: function(url, type, tabs)
+            {
+                var meTab = this;
+
+                me.getDb('urls', function(data, cnt) {
+                    // check tabs list
+                    var uCnt = 0,
+                        mIndex;
+                    for (var k in data) {
+                        if (data[k].url === url) {
+                            me.showAlert('#burls_alert_add_url_error');
+                            meTab.objUrl.focus();
+                            return;
+                        }
+                        if ((mIndex = k.match(/^([0-9]+)_/)) && (mIndex = parseInt(mIndex[1])) > uCnt)
+                            uCnt = mIndex;
+                    }
+
+                    // save tab urls
+                    var nKey = me.keyGenerate(++uCnt);
+                    data[nKey] = {
+                        url: url,
+                        type: type,
+                        tabs: tabs
+                    };
+                    me.storage.set({ urls: data });
+
+                    // add url in table
+                    meTab.clearForm();
+                    me.addTableRows(meTab.tableSelector, [meTab.getTableRow(nKey, url, type, tabs)]);
+
+                    // show successful message
+                    me.showAlert('#burls_alert_add_url_success');
+                });
+            },
+
+            onChangeForm: function()
+            {
+                this.errHide();
+            }
+        };
+
+        // Fill in the table
+        this.getDb('urls', function (data, cnt) {
+            if (!cnt)
+                return;
+            var arrUrls = [];
+            for (var k in data)
+                arrUrls.push(objBU.getTableRow(k, data[k].url, data[k].type, data[k].tabs));
+            me.addTableRows(objBU.tableSelector, arrUrls);
+        });
+
+        // Update tabs select data
+        this.getDb('tabs', function(data, cnt) {
+            if (!cnt)
+                return;
+            var s = '';
+            for (var k in data)
+                s += '<option value="'+ k +'">'+ data[k] +'</option>';
+            objBU.objTabs.append(s);
+        });
+
+        // Change URL input
+        objBU.objUrl.on('input', function() {
+            objBU.onChangeForm();
+        });
+
+        // Change Check type checkbox
+        objBU.objCheckType.change(function() {
+            var valSel = $.trim($(this).val());
+            if (valSel === 'all') {
+                objBU.objTabs.prop("disabled", true);
+                objBU.objTabsLabel.text('All tabs');
+            }
+            else {
+                if (objBU.objTabs.prop("disabled"))
+                    objBU.objTabs.prop("disabled", false);
+
+                if (valSel === 'list')
+                    objBU.objTabsLabel.text('Tabs list');
+                else
+                    objBU.objTabsLabel.text('Excluded tabs list');
+            }
+            objBU.onChangeForm();
+        });
+
+        // Change Tabs checkbox
+        objBU.objTabs.change(function() {
+            objBU.onChangeForm();
+        });
+
+        // Click add block url
+        $('#burls_form_btn_add_url').click(function() {
+            var dataUri = objBU.parseUri();
+
+            if (dataUri.url === '<all_urls>' || (dataUri.host === '*' && dataUri.protocol === '*' && ! dataUri.urn)) {
+                objBU.errUrl('Templates <span class="font-italic font-weight-bold">&lt;all_urls&gt;</span>' +
+                    ' and <span class="font-italic font-weight-bold">*://*/</span>' +
+                    ' can not be specified, as there will be no lockout sense. '+ objBU.objUrlErrHelp.html());
+            }
+            else if (! dataUri.url) {
+                objBU.errUrl('<span class="font-italic font-weight-bold">URL</span> required.');
+            }
+            else if (! dataUri.host || ! dataUri.protocol) {
+                objBU.errUrl('Invalid url address template. See example '+ objBU.objUrlErrHelp.html());
+                feather.replace();
+            }
+            else if (dataUri.type !== 'all' && ! dataUri.tabs.length) {
+                objBU.errTabs('Select at least one tab.');
+            }
+            else {
+                objBU.saveUrl(dataUri.protocol+ '://'+ dataUri.host +'/'+ dataUri.urn, dataUri.type, dataUri.tabs);
+                return;
+            }
+            objBU.objUrl.focus();
+        });
+
+        // Click clear url from the form
+        $('#burls_form_btn_clear_url').click(function() {
+            objBU.clearForm();
+        });
+
+        // Click remove tab url
+        $('#burls_table_urls').on('click', '.burl-table-action .action-trash', function() {
+            var uKey = $(this).parent().data('burl-key');
+            me.getDb('urls', function (data, cnt) {
+                if (!cnt)
+                    return;
+                delete data[uKey];
+                me.storage.set({ urls: data });
+            });
+            me.removeTableRow(this);
         });
     },
 
@@ -193,7 +458,7 @@ var objSetDS = objSetDS || {
         };
 
         // Fill in the table
-        me.storage.get(['tabs'], function (res) {
+        this.storage.get(['tabs'], function (res) {
             if (typeof res.tabs !== "object" || ! Object.keys(res.tabs).length)
                 return;
             var arrUrls = [];
@@ -317,7 +582,11 @@ var objSetDS = objSetDS || {
     init: function()
     {
         this.setEvents();
+        this.setEventsBlockedUrls();
         this.setEventsTabs();
+
+        // Corrected style select2 input
+        $('.select2-selection').addClass('custom-select');
 
         // show blocked urls container
         $('.content-'+this.getActiveMenuItem()).fadeIn(1000);
@@ -330,10 +599,7 @@ var objSetDS = objSetDS || {
 $(document).ready(function(){
     $('[data-toggle="popover"]').popover();
     $('[data-toggle="tooltip"]').tooltip();
+    $('[data-multiple="select2"]').select2();
+    feather.replace();
     objSetDS.init();
 });
-
-/**
- * Replace feather lib
- */
-feather.replace();

@@ -8,6 +8,17 @@ input[type="text"]:-moz-placeholder           {color:#B6DEA4;}/* Firefox 18- */
 input[type="text"]:-ms-input-placeholder      {color:#B6DEA4;}
 
 /**
+ * Select2
+ *==========================================*/
+.select2-container {
+    width: 100%!important;
+}
+.select2-selection {
+    padding: 2px;
+    height: 100%;
+}
+
+/**
  * Feather
  *==========================================*/
 

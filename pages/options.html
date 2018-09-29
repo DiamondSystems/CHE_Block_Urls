@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Block urls settings</title>
 
-    <link rel="shortcut icon" href="../img/favicon.ico" type="image/x-icon"/>
-    <link rel="icon" href="../img/favicon.ico" type="image/x-icon"/>
-    <link rel="stylesheet" href="../lib/bootstrap/bootstrap.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="shortcut icon" href="../img/favicon.ico" type="image/x-icon" />
+    <link rel="icon" href="../img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="../lib/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="../lib/select2/select2.min.css" />
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="page-options">
 <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
@@ -51,60 +52,236 @@
         </nav>
 
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+
+            <!-- START Blocked URLs page -->
+
             <div class="content-block content-blocked_urls">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Blocked urls</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle">
+                        <button class="btn-show-form btn btn-sm btn-outline-secondary dropdown-toggle">
                             <span data-feather="edit"></span>
-                            Show form
+                            Show forms
                         </button>
                     </div>
                 </div>
 
-                <div class="table-responsive">
+                <div class="row justify-content-center">
+                    <div id="burls_alert_add_url_success" class="col-sm-5 col-md-3 alert alert-success text-center" role="alert" style="display: none">
+                        Successfully added!
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div id="burls_alert_add_url_error" class="col-sm-5 col-md-3 alert alert-danger text-center" role="alert" style="display: none">
+                        Such a URI already exists!
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                </div>
+
+                <div class="row mt-1 mb-3 add-form" style="display: none">
+                    <div class="col-md-4 pr-1">
+                        <label for="burls_form_uri">
+                            <span class="font-italic font-weight-bold">URL</span>&nbsp;&nbsp;
+                            <span id="burls_form_help"><a href="#" data-toggle="modal" data-target="#burls_modal_example_urls"><span data-feather="help-circle"></span></a></span>
+                        </label>
+                        <input type="text" class="form-control" id="burls_form_uri" placeholder="*://site.com/*">
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-md-2 px-1">
+                        <label for="burls_form_check_type">Check type</label>
+                        <select class="custom-select d-block w-100" id="burls_form_check_type">
+                            <option value="all">All</option>
+                            <option value="list">List</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 px-1">
+                        <label for="burls_form_tabs" class="d-block w-100">All tabs</label>
+                        <select class="custom-select" id="burls_form_tabs" data-multiple="select2" multiple="multiple" disabled></select>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    <div class="col-md-1 px-1 pt-4">
+                        <button id="burls_form_btn_add_url" class="btn btn-primary btn-md btn-block mt-1" type="submit">Add</button>
+                    </div>
+                    <div class="col-md-1 pl-1 pt-4">
+                        <button id="burls_form_btn_clear_url" class="btn btn-warning btn-md btn-block mt-1">Clear</button>
+                    </div>
+                </div>
+
+                <div id="burls_table_urls" class="table-responsive pt-3 mb-5">
                     <table class="table table-striped table-sm">
-                        <thead>
+                        <thead class="table-info">
                         <tr>
-                            <th>#</th>
-                            <th>Header</th>
-                            <th>Header</th>
-                            <th>Header</th>
-                            <th>Header</th>
+                            <th width="6%">#</th>
+                            <th width="10%">Check type</th>
+                            <th>Blocked URLs</th>
+                            <th width="10%">Tabs</th>
+                            <th width="10%">Action</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        <tr>
-                            <td>1,001</td>
-                            <td>Lorem</td>
-                            <td>ipsum</td>
-                            <td>dolor</td>
-                            <td>sit</td>
-                        </tr>
-                        <tr>
-                            <td>1,002</td>
-                            <td>amet</td>
-                            <td>consectetur</td>
-                            <td>adipiscing</td>
-                            <td>elit</td>
-                        </tr>
-                        <tr>
-                            <td>1,003</td>
-                            <td>Integer</td>
-                            <td>nec</td>
-                            <td>odio</td>
-                            <td>Praesent</td>
-                        </tr>
-                        </tbody>
+                        <tbody></tbody>
                     </table>
                 </div>
+
+                <!-- Modal -->
+                <div class="modal fade" id="burls_modal_example_urls" tabindex="-1" role="dialog" aria-labelledby="burls_modal_example_urls_title" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="burls_modal_example_urls_title">URL format</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="table-responsive">
+                                    <h5 class="text-success">Supported format:</h5>
+                                    <table class="table table-striped table-sm">
+                                        <thead class="table-secondary">
+                                        <tr>
+                                            <th>Pattern</th>
+                                            <th>What it does</th>
+                                            <th>Examples of matching URLs</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td><span class="text-success">http://*/*</span></td>
+                                            <td>Matches any URL that uses the http scheme</td>
+                                            <td>
+                                                <div class="text-info">http://www.google.com/</div>
+                                                <div class="text-info">http://example.org/foo/bar.html</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">http://*/foo*</span></td>
+                                            <td>Matches any URL that uses the http scheme, on any host, as long as the path starts with /foo</td>
+                                            <td>
+                                                <div class="text-info">http://example.com/foo/bar.html</div>
+                                                <div class="text-info">http://www.google.com/foo</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">https://*.google.com/foo*bar</span></td>
+                                            <td>Matches any URL that uses the https scheme, is on a google.com host (such as www.google.com, docs.google.com, or google.com), as long as the path starts with /foo and ends with bar</td>
+                                            <td>
+                                                <div class="text-info">https://www.google.com/foo/baz/bar</div>
+                                                <div class="text-info">https://docs.google.com/foobar</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">http://example.org/foo/bar.html</span></td>
+                                            <td>Matches the specified URL</td>
+                                            <td>
+                                                <div class="text-info">http://example.org/foo/bar.html</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">http://127.0.0.1/*</span></td>
+                                            <td>Matches any URL that uses the http scheme and is on the host 127.0.0.1</td>
+                                            <td>
+                                                <div class="text-info">http://127.0.0.1/</div>
+                                                <div class="text-info">http://127.0.0.1/foo/bar.html</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">*://mail.google.com/*</span></td>
+                                            <td>Matches any URL that starts with http://mail.google.com or https://mail.google.com.</td>
+                                            <td>
+                                                <div class="text-info">http://mail.google.com/foo/baz/bar</div>
+                                                <div class="text-info">https://mail.google.com/foobar</div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <h5 class="text-warning">Not supported format:</h5>
+                                    <table class="table table-striped table-sm">
+                                        <thead class="table-secondary">
+                                        <tr>
+                                            <th>Pattern</th>
+                                            <th>What it does</th>
+                                            <th>Examples of matching URLs</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td><span class="text-success">file:///foo*</span></td>
+                                            <td>Matches any local file whose path starts with /foo</td>
+                                            <td>
+                                                <div class="text-info">file:///foo/bar.html</div>
+                                                <div class="text-info">file:///foo</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">&lt;all_urls&gt;</span></td>
+                                            <td>Matches any URL that uses a permitted scheme. (See the beginning of this section for the list of permitted schemes.)</td>
+                                            <td>
+                                                <div class="text-info">http://example.org/foo/bar.html</div>
+                                                <div class="text-info">file:///bar/baz.html</div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">*://*/</span></td>
+                                            <td>Matches any URL</td>
+                                            <td>
+                                                <div class="text-info">http://mail.google.com/</div>
+                                                <div class="text-info">ws://site.com/</div>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <h5 class="text-danger">Invalid pattern matches:</h5>
+                                    <table class="table table-striped table-sm">
+                                        <thead class="table-secondary">
+                                        <tr>
+                                            <th>Bad pattern</th>
+                                            <th>Why it's bad</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td><span class="text-success">http://www.google.com</span></td>
+                                            <td>No path</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">http://*foo/bar</span></td>
+                                            <td>'*' in the host can be followed only by a '.' or '/'</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">http://foo.*.bar/baz</span></td>
+                                            <td>If '*' is in the host, it must be the first character</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">http:/bar</span></td>
+                                            <td>Missing scheme separator ("/" should be "//")</td>
+                                        </tr>
+                                        <tr>
+                                            <td><span class="text-success">foo://*</span></td>
+                                            <td>Invalid scheme</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="d-block border-top pt-3">
+                                    Learn More: <a target="_blank" href="https://developer.chrome.com/extensions/match_patterns">https://developer.chrome.com/extensions/match_patterns</a>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div><!-- .content-blocked_urls -->
+
+            <!-- START Tabs page -->
 
             <div class="content-block content-tabs">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">Tabs</h1>
                     <div class="btn-toolbar mb-2 mb-md-0">
-                        <button class="btn-add-form btn btn-sm btn-outline-secondary dropdown-toggle">
+                        <button class="btn-show-form btn btn-sm btn-outline-secondary dropdown-toggle">
                             <span data-feather="edit"></span>
                             Show form
                         </button>
@@ -121,6 +298,7 @@
                         <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                     </div>
                 </div>
+
                 <div class="row mt-1 mb-3 add-form" style="display: none">
                     <div class="col-md-1 pr-1">
                         <label for="tabs_form_protocols">Protocol</label>
@@ -152,7 +330,7 @@
                     <div class="col-md-1 px-1 pt-4">
                         <button id="tabs_form_btn_add_url" class="btn btn-primary btn-md btn-block mt-1" type="submit">Add</button>
                     </div>
-                    <div class="col-md-1 px-1 pt-4">
+                    <div class="col-md-1 pl-1 pt-4">
                         <button id="tabs_form_btn_clear_url" class="btn btn-warning btn-md btn-block mt-1">Clear</button>
                     </div>
                     <div id="tabs_form_viewing_uri" class="alert alert-warning text-center py-1 px-2 ml-3 mt-3 mb-1" role="alert">
@@ -175,6 +353,8 @@
                 </div>
             </div><!-- .content-tabs -->
 
+            <!-- START About the extension page -->
+
             <div class="content-block content-ext_info">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2">About the extension</h1>
@@ -186,6 +366,7 @@
 <script src="../lib/jQuery/jquery-3.3.1.min.js"></script>
 <script src="../lib/popper/popper.min.js"></script>
 <script src="../lib/bootstrap/bootstrap.min.js"></script>
+<script src="../lib/select2/select2.min.js"></script>
 <script src="../lib/feather/feather.min.js"></script>
 <script src="js/main.js"></script>
 </body>
