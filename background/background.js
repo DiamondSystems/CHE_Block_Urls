@@ -17,7 +17,7 @@ var objDsBg = objDsBg || {
         var me = this;
         this.storage.get(['urls','tabs'], function (res) {
             // check urls list
-            if (typeof res.urls !== "object" || !Object.keys(res.urls).length)
+            if (typeof res.urls !== "object" || ! Object.keys(res.urls).length)
                 return;
 
             // tabs list
@@ -31,15 +31,15 @@ var objDsBg = objDsBg || {
                 switch (res.urls[ku].type)
                 {
                     case 'all':
-                        sortUrls.push(ku);
+                        sortUrls.push(res.urls[ku].url);
                         break;
 
                     case 'not':
-                        me.addUrlTabs(ku, res.urls[ku].tabs);
+                        me.addUrlTabs(res.urls[ku].url, res.urls[ku].tabs);
                         break;
 
                     case 'list':
-                        me.addQueryUrl(ku, res.urls[ku].tabs);
+                        me.addQueryUrl(res.urls[ku].url, res.urls[ku].tabs);
                         break;
 
                     default: continue;
@@ -223,52 +223,6 @@ var objDsBg = objDsBg || {
         this.startLogic();
     }
 };
-
-//================ START ================//
-
-objDsBg.storage.set({
-    // https://developer.chrome.com/extensions/match_patterns
-    urls: {
-        '*://gc.kis.v2.scr.kaspersky-labs.com/*': {
-            type: 'list',
-            tabs: ['1', '2', '3']
-        }
-
-        // --- Example ---
-        // 'http://chrome.loc': {
-        //     type: 'list',
-        //     tabs: ['123']
-        // },
-        // 'http://1.test.loc/*': {
-        //     type: 'not',
-        //     tabs: ['456','789']
-        // },
-        // 'http://2.test.loc/*': {
-        //     type: 'not',
-        //     tabs: ['456','789']
-        // },
-        // 'http://3.test.loc/*': {
-        //     type: 'not',
-        //     tabs: ['456']
-        // },
-        // '*://gc.kis.v2.scr.kaspersky-labs.com/*': {
-        //     type: 'all',
-        //     tabs: []
-        // }
-    },
-    // browser tab url address
-    tabs: {
-        '1': 'http://doc.extjs.loc/*',
-        '2': 'http://doc.laravel.loc/*',
-        '3': 'http://9.test.loc/*'
-
-        // --- Example ---
-        // '1': 'https://doc.laravel.loc/',
-        // '2': 'http://doc.extjs.loc/',
-        // '3': 'http://doc.extjs.loc/*',
-        // '4': 'http://doc.extjs.loc/Ext.html'
-    }
-});
 
 /**
  * Init script
