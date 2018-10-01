@@ -682,13 +682,13 @@ var objSetDS = objSetDS || {
             {
                 var meTab = this;
 
-                me.storage.get(['tabs'], function (res) {
+                me.getDb('tabs', function (data, cnt) {
                     // check tabs list
                     var uCnt = 0,
                         mIndex;
-                    if (typeof res.tabs === "object") {
-                        for (var kt in res.tabs) {
-                            if (res.tabs[kt] === url) {
+                    if (cnt) {
+                        for (var kt in data) {
+                            if (data[kt] === url) {
                                 me.showAlert('#tabs_alert_add_url_error');
                                 meTab.objHost.focus();
                                 return;
@@ -700,8 +700,8 @@ var objSetDS = objSetDS || {
 
                     // save tab urls
                     var nKey = me.keyGenerate(++uCnt);
-                    res.tabs[nKey] = url;
-                    me.storage.set({ tabs: res.tabs });
+                    data[nKey] = url;
+                    me.storage.set({ tabs: data });
 
                     // add url in table
                     meTab.clearForm();
@@ -735,12 +735,12 @@ var objSetDS = objSetDS || {
         };
 
         // Fill in the table
-        this.storage.get(['tabs'], function (res) {
-            if (typeof res.tabs !== "object" || ! Object.keys(res.tabs).length)
+        this.getDb('tabs', function (data, cnt) {
+            if (! cnt)
                 return;
             var arrUrls = [];
-            for (var kt in res.tabs)
-                arrUrls.push(objTabs.getTableRow(kt, res.tabs[kt]));
+            for (var kt in data)
+                arrUrls.push(objTabs.getTableRow(kt, data[kt]));
             me.addTableRows(objTabs.tableSelector, arrUrls);
         });
 
