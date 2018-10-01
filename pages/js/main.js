@@ -9,6 +9,12 @@ var objSetDS = objSetDS || {
 
     storage: chrome.storage.sync,
 
+    eventName_ETRBU: 'editTableRowBlockedUrls',
+
+    objTable:              $('table'),
+    objTableBlockedUrls:   $('#burls_table_urls > table:eq(0)'),
+    objSelectBlockUrlTabs: $('.block-url-tabs-list'),
+
     keyGenerate: function(index, count)
     {
         var res    = '',
@@ -50,8 +56,64 @@ var objSetDS = objSetDS || {
         return $('.sidebar-sticky .nav-link.active').data("menu-item");
     },
 
+    onEditTableRowBlockedUrls: function(blockUrlKeys)
+    {
+        this.objTableBlockedUrls.trigger(this.eventName_ETRBU, [blockUrlKeys]);
+    },
+
+    onAddSelectItemBlockUrlTabs: function(tabKey, tabUrl)
+    {
+        this.objSelectBlockUrlTabs.append('<option value="'+ tabKey +'">'+ tabUrl +'</option>');
+    },
+
+    onRemoveSelectItemBlockUrlTabs: function(tabKey)
+    {
+        this.objSelectBlockUrlTabs.find('option[value="'+ tabKey +'"]').remove();
+    },
+
+    updateBlockUrls: function(key)
+    {
+        var me = this;
+
+        // Update table rows in the blocked urls page
+        var rows    = this.objTableBlockedUrls.find('span[data-table-tab-key="'+ key +'"]'),
+            rowsCnt = rows.length;
+        if (rowsCnt) {
+            this.getDb('urls', function (data, cnt) {
+                if (!cnt)
+                    return;
+                var x1, tCnt;
+                for (var k in data) {
+                    if (data[k].type === 'all')
+                        continue;
+                    tCnt = data[k].tabs.length;
+                    for (x1=0; x1 < tCnt; x1++) {
+                        if (data[k].tabs[x1] === key) {
+                            data[k].tabs.splice(x1, 1);
+                            break;
+                        }
+                    }
+                    if (! data[k].tabs.length)
+                        data[k].type = 'all';
+                }
+                me.storage.set({ urls:data });
+
+                // Update table rows
+                var arrKeys = [];
+                for (x1=0; x1 < rowsCnt; x1++)
+                    arrKeys.push( rows.eq(x1).parent().data('action-key') );
+                me.onEditTableRowBlockedUrls(arrKeys);
+            });
+        }
+
+        // Remove blocked url tab in the select
+        this.onRemoveSelectItemBlockUrlTabs(key);
+    },
+
     setEvents: function()
     {
+        var me = this;
+
         // Click left menu bar
         $('.sidebar-sticky .nav-link').click(function(){
             var $this = $(this);
@@ -78,6 +140,42 @@ var objSetDS = objSetDS || {
                 $this.addClass('active');
             }
         });
+
+        // Remove Tab or Block URL
+        var objModalDelUrl = $('#global_modal_removing_url');
+        this.objTable.on('click', 'button[data-target="#global_modal_removing_url"]', function() {
+            objModalDelUrl.find('span.remove-url').html(
+                $(this).parent().parent().parent().children('td:eq(2)').html()
+            );
+            objModalDelUrl.find('button.action-remove')
+                .data('remove-url-type', $(this).data('url-type'))
+                .data('remove-url-key', $(this).parent().data('action-key'));
+        });
+        objModalDelUrl.find('button.action-remove').click(function() {
+            var uType = $(this).data('remove-url-type'),
+                uKey = $(this).data('remove-url-key');
+            me.getDb(uType, function (data, cnt) {
+                if (!cnt)
+                    return;
+                // Remove from DB
+                delete data[uKey];
+                var q = {};
+                q[uType] = data;
+                me.storage.set(q);
+
+                // Remove row table
+                $('table div[data-action-key="'+ uKey +'"] > button[data-url-type="'+ uType +'"]').closest('tr').fadeOut(500, function() {
+                    var objParent = $(this).parent(),
+                        tCnt = objParent.children('tr').length - 1;
+                    $(this).remove();
+                    for (var x1=0; x1 < tCnt; x1++)
+                        objParent.find('tr:eq('+ x1 +') > td:eq(0)').text(x1+1);
+                });
+
+                if (uType === 'tabs')
+                    me.updateBlockUrls(uKey);
+            });
+        });
     },
 
     setEventsBlockedUrls: function()
@@ -85,74 +183,131 @@ var objSetDS = objSetDS || {
         var me = this;
 
         var objBU = {
-            errUrlIsShow:  false,
-            errTabsIsShow: false,
+            objUrl:            $('#burls_form_uri'),
+            objUrlErr:         $('#burls_form_uri').next(),
+            objUrlErrHelp:     $('#burls_form_help'),
+            objCheckType:      $('#burls_form_check_type'),
+            objTabs:           $('#burls_form_tabs'),
+            objTabsLabel:      $('label[for="burls_form_tabs"]'),
+            objTabsErr:        $('#burls_form_tabs_err'),
+            objModal:          $('#burls_modal_edit_urls'),
+            objModalCheckType: $('#burls_modal_edit_check_type'),
+            objModalTabs:      $('#burls_modal_edit_tabs'),
+            objModalTabsLabel: $('label[for="burls_modal_edit_tabs"]'),
+            objModalTabsErr:   $('#burls_modal_edit_tabs_err'),
+            objModalBtnSave:   $('#burls_modal_edit_btn_save'),
 
-            objUrl:        $('#burls_form_uri'),
-            objUrlErr:     $('#burls_form_uri').next(),
-            objUrlErrHelp: $('#burls_form_help'),
-            objCheckType:  $('#burls_form_check_type'),
-            objTabs:       $('#burls_form_tabs'),
-            objTabsLabel:  $('#burls_form_tabs').parent().children('label[for="burls_form_tabs"]'),
-            objTabsErr:    $('#burls_form_tabs').parent().children('.invalid-feedback'),
+            objErrs: {
+                url:       false,
+                tabs:      false,
+                modalTabs: false
+            },
+            isErrHide: true,
 
             tableSelector: '#burls_table_urls tbody',
+            
+            modalCheckTypeCache: '',
+            modalTabsCache: [],
 
-            errUrl: function(txt)
+            errShow: function(section, txt)
             {
-                if (!this.errUrlIsShow) {
-                    this.errUrlIsShow = true;
-                    this.objUrlErr.html(txt).stop().show(300);
-                }
-            },
-
-            errTabs: function(txt)
-            {
-                if (!this.errTabsIsShow) {
-                    this.errTabsIsShow = true;
-                    this.objTabsErr.html(txt).stop().show(300);
+                if (this.objErrs[section])
+                    return;
+                this.objErrs[section] = true;
+                this.isErrHide        = false;
+                switch (section)
+                {
+                    case 'url':       this.objUrlErr.html(txt).stop().show(300);       break;
+                    case 'tabs':      this.objTabsErr.html(txt).stop().show(300);      break;
+                    case 'modalTabs': this.objModalTabsErr.html(txt).stop().show(300); break;
                 }
             },
 
             errHide: function()
             {
-                if (this.errUrlIsShow || this.errTabsIsShow) {
-                    this.errUrlIsShow = false;
-                    this.errTabsIsShow = false;
-                    this.objUrlErr.html('').stop().hide(300);
-                    this.objTabsErr.html('').stop().hide(300);
+                if (this.isErrHide)
+                    return;
+                this.isErrHide = true;
+                for (var k in this.objErrs)
+                    this.objErrs[k] = false;
+                this.objUrlErr.html('').stop().hide(300);
+                this.objTabsErr.html('').stop().hide(300);
+                this.objModalTabsErr.html('').stop().hide(300);
+            },
+
+            getTableColumnTabs: function(key, type, tabs)
+            {
+                var strTabs = '';
+                if (type !== 'all') {
+                    var tabsCnt = tabs.length;
+                    strTabs = '<div class="blocked-url-tabs" data-action-key="'+ key +'">';
+                    for (var i=0; i<tabsCnt; i++)
+                        strTabs += '<span data-table-tab-key="'+ tabs[i] +'" class="badge badge-info">'+ tabs[i] +'</span> ';
+                    strTabs += '</div>';
                 }
+                else
+                    strTabs = '<h6 class="p-0 m-0"><span class="badge badge-warning">&infin;</span></h6>';
+
+                return strTabs;
             },
 
             getTableRow: function(key, url, type, tabs)
             {
-                var typeName,
-                    strTabs = '',
-                    tabsCnt = tabs.length;
+                return [
+                    this.getBlockTypeName(type),
+                    url,
+                    this.getTableColumnTabs(key, type, tabs),
+                    '<div data-action-key="'+ key +'">' +
+                        '<button type="button" data-toggle="modal" data-target="#burls_modal_viewing_urls" class="btn btn-primary btn-xs mr-2"><span data-feather="eye"></span></button>' +
+                        '<button type="button" data-toggle="modal" data-target="#burls_modal_edit_urls" class="btn btn-info btn-xs mr-2"><span data-feather="edit"></span></button>' +
+                        '<button type="button" data-toggle="modal" data-target="#global_modal_removing_url" data-url-type="urls" class="btn btn-danger btn-xs"><span data-feather="trash-2"></span></button> ' +
+                        '</div>'
+                ];
+            },
 
+            editTableRow: function(blockUrlKeys)
+            {
+                var meTab = this;
+
+                me.getDb('urls', function (data, cnt) {
+                    if (!cnt)
+                        return;
+                    var arrCnt = blockUrlKeys.length,
+                        objTable, uData;
+                    for (var i=0; i<arrCnt; i++) {
+                        if (! (blockUrlKeys[i] in data))
+                            continue;
+                        uData    = data[blockUrlKeys[i]];
+                        objTable = me.objTableBlockedUrls.find('div[data-action-key="'+ blockUrlKeys[i] +'"]:eq(0)').closest('tr');
+
+                        objTable.children('td:eq(1)').html( meTab.getBlockTypeName(uData.type) );
+                        objTable.children('td:eq(3)').html( meTab.getTableColumnTabs(blockUrlKeys[i], uData.type, uData.tabs) );
+                    }
+                });
+            },
+
+            getBlockTypeName: function(type)
+            {
                 switch (type)
                 {
-                    case 'all':  typeName = 'All';
-                        tabsCnt = 0;
-                        strTabs = '&infin;';
-                        break;
-                    case 'list': typeName = 'List'; break;
-                    case 'none': typeName = 'None'; break;
+                    case 'all':  return('All');
+                    case 'list': return('List');
+                    case 'none': return('None');
 
-                    default: typeName = '---';
+                    default: return('---');
                 }
+            },
 
-                for (var i=0; i<tabsCnt; i++)
-                    strTabs += '<span class="badge badge-info">'+ tabs[i] +'</span> ';
+            getTabsTypeName: function(type)
+            {
+                switch (type)
+                {
+                    case 'all':  return('All tabs');
+                    case 'list': return('Tabs list');
+                    case 'none': return('Excluded tabs list');
 
-                return [
-                    typeName,
-                    url,
-                    strTabs,
-                    '<div class="burl-table-action" data-burl-key="'+ key +'">' +
-                    '<button type="button" class="action-trash btn btn-danger btn-xs"><span data-feather="trash-2"></span></button>' +
-                    '</div>'
-                ];
+                    default: return('Tabs');
+                }
             },
 
             clearForm: function()
@@ -248,7 +403,12 @@ var objSetDS = objSetDS || {
             var s = '';
             for (var k in data)
                 s += '<option value="'+ k +'">'+ data[k] +'</option>';
-            objBU.objTabs.append(s);
+            me.objSelectBlockUrlTabs.append(s);
+        });
+
+        // Edit table row
+        this.objTableBlockedUrls.on(this.eventName_ETRBU, function(e, blockUrlKeys) {
+            objBU.editTableRow(blockUrlKeys);
         });
 
         // Change URL input
@@ -256,26 +416,18 @@ var objSetDS = objSetDS || {
             objBU.onChangeForm();
         });
 
-        // Change Check type checkbox
+        // Change Check type select data
         objBU.objCheckType.change(function() {
             var valSel = $.trim($(this).val());
-            if (valSel === 'all') {
+            if (valSel === 'all')
                 objBU.objTabs.prop("disabled", true);
-                objBU.objTabsLabel.text('All tabs');
-            }
-            else {
-                if (objBU.objTabs.prop("disabled"))
-                    objBU.objTabs.prop("disabled", false);
-
-                if (valSel === 'list')
-                    objBU.objTabsLabel.text('Tabs list');
-                else
-                    objBU.objTabsLabel.text('Excluded tabs list');
-            }
+            else if (objBU.objTabs.prop("disabled"))
+                objBU.objTabs.prop("disabled", false);
+            objBU.objTabsLabel.text(objBU.getTabsTypeName(valSel));
             objBU.onChangeForm();
         });
 
-        // Change Tabs checkbox
+        // Change Tabs select data
         objBU.objTabs.change(function() {
             objBU.onChangeForm();
         });
@@ -285,19 +437,19 @@ var objSetDS = objSetDS || {
             var dataUri = objBU.parseUri();
 
             if (dataUri.url === '<all_urls>' || (dataUri.host === '*' && dataUri.protocol === '*' && ! dataUri.urn)) {
-                objBU.errUrl('Templates <span class="font-italic font-weight-bold">&lt;all_urls&gt;</span>' +
+                objBU.errShow('url', 'Templates <span class="font-italic font-weight-bold">&lt;all_urls&gt;</span>' +
                     ' and <span class="font-italic font-weight-bold">*://*/</span>' +
                     ' can not be specified, as there will be no lockout sense. '+ objBU.objUrlErrHelp.html());
             }
             else if (! dataUri.url) {
-                objBU.errUrl('<span class="font-italic font-weight-bold">URL</span> required.');
+                objBU.errShow('url', '<span class="font-italic font-weight-bold">URL</span> required.');
             }
             else if (! dataUri.host || ! dataUri.protocol) {
-                objBU.errUrl('Invalid url address template. See example '+ objBU.objUrlErrHelp.html());
+                objBU.errShow('url', 'Invalid url address template. See example '+ objBU.objUrlErrHelp.html());
                 feather.replace();
             }
             else if (dataUri.type !== 'all' && ! dataUri.tabs.length) {
-                objBU.errTabs('Select at least one tab.');
+                objBU.errShow('tabs', 'Select at least one tab.');
             }
             else {
                 objBU.saveUrl(dataUri.protocol+ '://'+ dataUri.host +'/'+ dataUri.urn, dataUri.type, dataUri.tabs);
@@ -311,16 +463,138 @@ var objSetDS = objSetDS || {
             objBU.clearForm();
         });
 
-        // Click remove tab url
-        $('#burls_table_urls').on('click', '.burl-table-action .action-trash', function() {
-            var uKey = $(this).parent().data('burl-key');
-            me.getDb('urls', function (data, cnt) {
-                if (!cnt)
+        // Click viewing url data
+        this.objTable.on('click', 'button[data-target="#burls_modal_viewing_urls"]', function() {
+            var uKey = $(this).parent().data('action-key');
+
+            me.getDb(['urls', 'tabs'], function(res) {
+                if (typeof res.urls !== "object" || typeof res.tabs !== "object"
+                    || ! Object.keys(res.urls).length || ! (uKey in res.urls)) {
                     return;
-                delete data[uKey];
-                me.storage.set({ urls: data });
+                }
+                var objModalViewUrl = $('#burls_modal_viewing_urls'),
+                    objTabsUrl      = objModalViewUrl.find('h5.tabs-url-all'),
+                    urlData         = res.urls[uKey];
+
+                // set data
+                objModalViewUrl.find('span.blocked-url').html(urlData.url);
+                objModalViewUrl.find('span.url-type').html(objBU.getBlockTypeName(urlData.type));
+                objModalViewUrl.find('legend.tab-url-title').html(objBU.getTabsTypeName(urlData.type));
+
+                // set tabs
+                if (urlData.type !== 'all') {
+                    objTabsUrl.hide().next().show();
+                    var tabsCnt = urlData.tabs.length,
+                        arrUrls = [],
+                        tabKey;
+                    if (tabsCnt) {
+                        for (var i=0; i<tabsCnt; i++) {
+                            tabKey = urlData.tabs[i];
+                            if (tabKey in res.tabs) {
+                                arrUrls.push([
+                                    tabKey,
+                                    res.tabs[tabKey]
+                                ]);
+                            }
+                        }
+                        if (arrUrls.length)
+                            me.addTableRows('#burls_modal_viewing_urls table.tabs-url-table tbody', arrUrls);
+                    }
+                }
+                else
+                    objTabsUrl.show().next().hide();
             });
-            me.removeTableRow(this);
+        });
+
+        // Click edit url data
+        this.objTable.on('click', 'button[data-target="#burls_modal_edit_urls"]', function() {
+            var uKey = $(this).parent().data('action-key');
+
+            objBU.errHide();
+
+            objBU.modalCheckTypeCache = objBU.objModalCheckType.val();
+            objBU.modalTabsCache      = objBU.objModalTabs.val();
+
+            me.getDb('urls', function(data, cnt) {
+                if (!cnt || ! (uKey in data))
+                    return;
+                var urlData = data[uKey];
+
+                // set data
+                objBU.objModalBtnSave.data('edit-url-key', uKey);
+                objBU.objModal.find('span.blocked-url').html(urlData.url);
+                objBU.objModal.find('select#burls_modal_edit_check_type > option[value="'+ urlData.type +'"]').prop('selected', true);
+                objBU.objModalTabsLabel.text(objBU.getTabsTypeName(urlData.type));
+                objBU.objModalTabs.prop('disabled', false).find('option:selected').prop('selected', false).change();
+
+                // set tabs
+                if (urlData.type !== 'all') {
+                    var tabsCnt = urlData.tabs.length;
+                    if (tabsCnt) {
+                        for (var i=0; i<tabsCnt; i++)
+                            objBU.objModalTabs.find('option[value="'+ urlData.tabs[i] +'"]').prop('selected', true);
+                        objBU.objModalTabs.change();
+                    }
+                }
+                else
+                    objBU.objModalTabs.prop('disabled', true);
+            });
+        });
+
+        // Change check type URL in the modal
+        objBU.objModalCheckType.change(function() {
+            var chType = $(this).val();
+
+            objBU.errHide();
+
+            if (chType === 'all') {
+                objBU.modalTabsCache = objBU.objModalTabs.val();
+                objBU.objModalTabs.prop('disabled', true).find('option:selected').prop('selected', false).change();
+            }
+            else {
+                objBU.objModalTabs.prop('disabled', false);
+                var cacheTabsCnt = objBU.modalTabsCache.length;
+                if (objBU.modalCheckTypeCache === 'all' && ! objBU.objModalTabs.val().length && cacheTabsCnt) {
+                    for (var i=0; i<cacheTabsCnt; i++)
+                        objBU.objModalTabs.find('option[value="'+ objBU.modalTabsCache[i] +'"]').prop('selected', true);
+                    objBU.objModalTabs.change();
+                }
+            }
+            objBU.modalCheckTypeCache = chType;
+            objBU.objModalTabsLabel.text(objBU.getTabsTypeName(chType));
+        });
+
+        // Change check type URL in the modal
+        objBU.objModalTabs.change(function() {
+            objBU.errHide();
+        });
+
+        // Save change url data
+        objBU.objModalBtnSave.click(function() {
+            var chType = objBU.objModalCheckType.val(),
+                tabs   = objBU.objModalTabs.val(),
+                uKey   = $(this).data('edit-url-key');
+
+            // Check data
+            if (chType !== 'all' && ! tabs.length)
+                objBU.errShow('modalTabs', 'Select at least one tab.');
+            else {
+                me.getDb('urls', function(data, cnt) {
+                    if (!cnt || ! (uKey in data))
+                        return;
+                    data[uKey].tabs = (chType === 'all') ? [] : tabs;
+                    data[uKey].type = chType;
+
+                    // update urls
+                    me.storage.set({ urls:data });
+
+                    // edit table row
+                    objBU.editTableRow([uKey]);
+
+                    // Close modal
+                    objBU.objModal.modal('hide');
+                });
+            }
         });
     },
 
@@ -388,8 +662,8 @@ var objSetDS = objSetDS || {
                 return [
                     key,
                     url,
-                    '<div class="tabs-table-action" data-tab-url-key="'+ key +'">' +
-                        '<button type="button" class="action-trash btn btn-danger btn-xs"><span data-feather="trash-2"></span></button>' +
+                    '<div data-action-key="'+ key +'">' +
+                        '<button type="button" data-toggle="modal" data-target="#global_modal_removing_url" data-url-type="tabs" class="btn btn-danger btn-xs"><span data-feather="trash-2"></span></button>' +
                         '</div>'
                 ];
             },
@@ -432,6 +706,9 @@ var objSetDS = objSetDS || {
                     // add url in table
                     meTab.clearForm();
                     me.addTableRows(meTab.tableSelector, [meTab.getTableRow(nKey, url)]);
+
+                    // add url and key tab in the selects
+                    me.onAddSelectItemBlockUrlTabs(nKey, url);
 
                     // show successful message
                     me.showAlert('#tabs_alert_add_url_success');
@@ -515,18 +792,6 @@ var objSetDS = objSetDS || {
         $('#tabs_form_btn_clear_url').click(function() {
             objTabs.clearForm();
         });
-
-        // Click remove tab url
-        $('#tabs_table_urls').on('click', '.tabs-table-action .action-trash', function() {
-            var uKey = $(this).parent().data('tab-url-key');
-            me.storage.get(['tabs'], function (res) {
-                if (typeof res.tabs !== "object" || ! Object.keys(res.tabs).length)
-                    return;
-                delete res.tabs[uKey];
-                me.storage.set({ tabs: res.tabs });
-            });
-            me.removeTableRow(this);
-        });
     },
 
     addTableRows: function(tableSelector, rows)
@@ -557,17 +822,6 @@ var objSetDS = objSetDS || {
                 objTable.find('tr:eq(-1)').fadeIn(500);
         }
         feather.replace();
-    },
-
-    removeTableRow: function(removeBtnSelector)
-    {
-        $(removeBtnSelector).closest('tr').fadeOut(500, function() {
-            var objParent = $(this).parent(),
-                tCnt = objParent.children('tr').length - 1;
-            $(this).remove();
-            for (var x1=0; x1 < tCnt; x1++)
-                objParent.find('tr:eq('+ x1 +') > td:eq(0)').text(x1+1);
-        });
     },
 
     showAlert: function(selector)

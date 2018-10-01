@@ -155,3 +155,15 @@ button.close {
 
 .border-top { border-top: 1px solid #e5e5e5; }
 .border-bottom { border-bottom: 1px solid #e5e5e5; }
+
+/**
+ * Blocked urls page
+ *==========================================*/
+
+.blocked-url-tabs {
+    line-height: 1.2;
+}
+.blocked-url-tabs span {
+    font-size: 62%;
+    padding: 0.30em .5em;
+}

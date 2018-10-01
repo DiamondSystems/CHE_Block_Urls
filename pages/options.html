@@ -80,7 +80,7 @@
                 <div class="row mt-1 mb-3 add-form" style="display: none">
                     <div class="col-md-4 pr-1">
                         <label for="burls_form_uri">
-                            <span class="font-italic font-weight-bold">URL</span>&nbsp;&nbsp;
+                            <span class="font-italic">URL</span>&nbsp;&nbsp;
                             <span id="burls_form_help"><a href="#" data-toggle="modal" data-target="#burls_modal_example_urls"><span data-feather="help-circle"></span></a></span>
                         </label>
                         <input type="text" class="form-control" id="burls_form_uri" placeholder="*://site.com/*">
@@ -96,8 +96,8 @@
                     </div>
                     <div class="col-md-4 px-1">
                         <label for="burls_form_tabs" class="d-block w-100">All tabs</label>
-                        <select class="custom-select" id="burls_form_tabs" data-multiple="select2" multiple="multiple" disabled></select>
-                        <div class="invalid-feedback"></div>
+                        <select class="block-url-tabs-list custom-select" id="burls_form_tabs" data-multiple="select2" multiple="multiple" disabled></select>
+                        <div id="burls_form_tabs_err" class="invalid-feedback"></div>
                     </div>
                     <div class="col-md-1 px-1 pt-4">
                         <button id="burls_form_btn_add_url" class="btn btn-primary btn-md btn-block mt-1" type="submit">Add</button>
@@ -122,7 +122,7 @@
                     </table>
                 </div>
 
-                <!-- Modal -->
+                <!-- Modal - Example URLs -->
                 <div class="modal fade" id="burls_modal_example_urls" tabindex="-1" role="dialog" aria-labelledby="burls_modal_example_urls_title" aria-hidden="true">
                     <div class="modal-dialog modal-lg" role="document">
                         <div class="modal-content">
@@ -273,6 +273,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Modal - Viewing URLs -->
+                <div class="modal fade" id="burls_modal_viewing_urls" tabindex="-1" role="dialog" aria-labelledby="burls_modal_viewing_urls_title" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="burls_modal_viewing_urls_title">Viewing URL data</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group row mb-0">
+                                    <label class="col-sm-3 col-form-label-sm">Blocked URL</label>
+                                    <div class="col-sm-9">
+                                        <h5><span class="blocked-url badge badge-info"></span></h5>
+                                    </div>
+                                </div>
+                                <div class="form-group row mb-0">
+                                    <label class="col-sm-3 col-form-label-sm">Check type</label>
+                                    <div class="col-sm-9">
+                                        <h5><span class="url-type badge badge-info"></span></h5>
+                                    </div>
+                                </div>
+                                <fieldset class="form-group">
+                                    <div class="row">
+                                        <legend class="tab-url-title col-form-label-sm col-sm-3"></legend>
+                                        <div class="col-sm-9">
+                                            <div class="table-responsive">
+                                                <h5 class="tabs-url-all"><span class="badge badge-info">&infin;</span></h5>
+                                                <table class="tabs-url-table table table-striped table-sm">
+                                                    <thead class="table-info">
+                                                    <tr>
+                                                        <th>#</th>
+                                                        <th>Key</th>
+                                                        <th>URL</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </fieldset>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal - Edit URLs -->
+                <div class="modal fade" data-backdrop="static" id="burls_modal_edit_urls" tabindex="-1" role="dialog" aria-labelledby="burls_modal_edit_urls_title" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="burls_modal_edit_urls_title">Edit URL data</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group row mb-0">
+                                    <label class="col-sm-3 col-form-label-sm">Blocked URL</label>
+                                    <div class="col-sm-9">
+                                        <h5><span class="blocked-url badge badge-info"></span></h5>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="burls_modal_edit_check_type" class="col-sm-3 col-form-label">Check type</label>
+                                    <div class="col-sm-9">
+                                        <select class="custom-select d-block w-100" id="burls_modal_edit_check_type">
+                                            <option value="all">All</option>
+                                            <option value="list">List</option>
+                                            <option value="none">None</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="burls_modal_edit_tabs" class="col-sm-3 col-form-label"></label>
+                                    <div class="col-sm-9">
+                                        <select class="block-url-tabs-list custom-select" id="burls_modal_edit_tabs" data-multiple="select2" multiple="multiple"></select>
+                                        <div id="burls_modal_edit_tabs_err" class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" id="burls_modal_edit_btn_save" data-edit-url-key="">Save changes</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div><!-- .content-blocked_urls -->
 
             <!-- START Tabs page -->
@@ -360,6 +454,27 @@
                     <h1 class="h2">About the extension</h1>
                 </div>
             </div><!-- .content-ext_info -->
+
+            <!-- Modal - Removing Tabs or Block URL -->
+            <div class="modal fade" id="global_modal_removing_url" tabindex="-1" role="dialog" aria-labelledby="global_modal_removing_url_title" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="global_modal_removing_url_title">Removing</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>Remove the <span class="remove-url badge badge-warning"></span> ?</h6>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                            <button type="button" data-remove-url-type="" data-remove-url-key="" data-dismiss="modal" class="action-remove btn btn-primary">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 </div>
