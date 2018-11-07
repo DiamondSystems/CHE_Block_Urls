@@ -15,42 +15,6 @@ var objSetDS = objSetDS || {
     objTableBlockedUrls:   $('#burls_table_urls > table:eq(0)'),
     objSelectBlockUrlTabs: $('.block-url-tabs-list'),
 
-    keyGenerate: function(index, count)
-    {
-        var res    = '',
-            pos    = 0,
-            w      = '0123456789qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM',
-            maxPos = w.length - 1;
-
-        count = (count) ? count : (index?4:6);
-        for (var i = 0; i < count; ++i) {
-            pos = Math.floor(Math.random() * maxPos);
-            res += w.substring(pos, pos + 1);
-        }
-        return ((index?index+'_':'')+res);
-    },
-
-    getDb: function(table, fun)
-    {
-        if (Array.isArray(table)) {
-            this.storage.get(table, function (res) {
-                fun(res);
-            });
-        }
-        else {
-            this.storage.get([table], function (res) {
-                if (typeof res[table] === "object")
-                    fun(res[table], Object.keys(res[table]).length);
-                else if (Array.isArray(res[table]))
-                    fun(res[table], res[table].length);
-                else if (res[table])
-                    fun(res[table],0);
-                else
-                    fun({},0);
-            });
-        }
-    },
-
     getActiveMenuItem: function()
     {
         return $('.sidebar-sticky .nav-link.active').data("menu-item");
@@ -79,7 +43,7 @@ var objSetDS = objSetDS || {
         var rows    = this.objTableBlockedUrls.find('span[data-table-tab-key="'+ key +'"]'),
             rowsCnt = rows.length;
         if (rowsCnt) {
-            this.getDb('urls', function (data, cnt) {
+            objFunDS.getDb('urls', function (data, cnt) {
                 if (!cnt)
                     return;
                 var x1, tCnt;
@@ -165,7 +129,7 @@ var objSetDS = objSetDS || {
         objModalDelUrl.find('button.action-remove').click(function() {
             var uType = $(this).data('remove-url-type'),
                 uKey = $(this).data('remove-url-key');
-            me.getDb(uType, function (data, cnt) {
+            objFunDS.getDb(uType, function (data, cnt) {
                 if (!cnt)
                     return;
                 // Remove from DB
@@ -280,7 +244,7 @@ var objSetDS = objSetDS || {
             {
                 var meTab = this;
 
-                me.getDb('urls', function (data, cnt) {
+                objFunDS.getDb('urls', function (data, cnt) {
                     if (!cnt)
                         return;
                     var arrCnt = blockUrlKeys.length,
@@ -359,7 +323,7 @@ var objSetDS = objSetDS || {
             {
                 var meTab = this;
 
-                me.getDb('urls', function(data, cnt) {
+                objFunDS.getDb('urls', function(data, cnt) {
                     // check tabs list
                     var uCnt = 0,
                         mIndex;
@@ -374,7 +338,7 @@ var objSetDS = objSetDS || {
                     }
 
                     // save tab urls
-                    var nKey = me.keyGenerate(++uCnt);
+                    var nKey = objFunDS.keyGenerate(++uCnt);
                     data[nKey] = {
                         url: url,
                         type: type,
@@ -398,7 +362,7 @@ var objSetDS = objSetDS || {
         };
 
         // Fill in the table
-        this.getDb('urls', function (data, cnt) {
+        objFunDS.getDb('urls', function (data, cnt) {
             if (!cnt)
                 return;
             var arrUrls = [];
@@ -408,7 +372,7 @@ var objSetDS = objSetDS || {
         });
 
         // Update tabs select data
-        this.getDb('tabs', function(data, cnt) {
+        objFunDS.getDb('tabs', function(data, cnt) {
             if (!cnt)
                 return;
             var s = '';
@@ -478,7 +442,7 @@ var objSetDS = objSetDS || {
         this.objTable.on('click', 'button[data-target="#burls_modal_viewing_urls"]', function() {
             var uKey = $(this).parent().data('action-key');
 
-            me.getDb(['urls', 'tabs'], function(res) {
+            objFunDS.getDb(['urls', 'tabs'], function(res) {
                 if (typeof res.urls !== "object" || typeof res.tabs !== "object"
                     || ! Object.keys(res.urls).length || ! (uKey in res.urls)) {
                     return;
@@ -526,7 +490,7 @@ var objSetDS = objSetDS || {
             objBU.modalCheckTypeCache = objBU.objModalCheckType.val();
             objBU.modalTabsCache      = objBU.objModalTabs.val();
 
-            me.getDb('urls', function(data, cnt) {
+            objFunDS.getDb('urls', function(data, cnt) {
                 if (!cnt || ! (uKey in data))
                     return;
                 var urlData = data[uKey];
@@ -590,7 +554,7 @@ var objSetDS = objSetDS || {
             if (chType !== 'all' && ! tabs.length)
                 objBU.errShow('modalTabs', 'Select at least one tab.');
             else {
-                me.getDb('urls', function(data, cnt) {
+                objFunDS.getDb('urls', function(data, cnt) {
                     if (!cnt || ! (uKey in data))
                         return;
                     data[uKey].tabs = (chType === 'all') ? [] : tabs;
@@ -693,7 +657,7 @@ var objSetDS = objSetDS || {
             {
                 var meTab = this;
 
-                me.getDb('tabs', function (data, cnt) {
+                objFunDS.getDb('tabs', function (data, cnt) {
                     // check tabs list
                     var uCnt = 0,
                         mIndex;
@@ -710,7 +674,7 @@ var objSetDS = objSetDS || {
                     }
 
                     // save tab urls
-                    var nKey = me.keyGenerate(++uCnt);
+                    var nKey = objFunDS.keyGenerate(++uCnt);
                     data[nKey] = url;
                     me.storage.set({ tabs: data });
 
@@ -746,7 +710,7 @@ var objSetDS = objSetDS || {
         };
 
         // Fill in the table
-        this.getDb('tabs', function (data, cnt) {
+        objFunDS.getDb('tabs', function (data, cnt) {
             if (! cnt)
                 return;
             var arrUrls = [];

@@ -2,7 +2,7 @@
   "author": "Diamond Systems",
   "manifest_version": 2,
   "name": "Block urls",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Block urls.",
   "default_locale": "en",
   "icons": {
@@ -30,7 +30,6 @@
     ]
   },
   "options_ui": {
-    "browser_style": false,
     "open_in_tab": true,
     "page": "pages/options.html"
   },
