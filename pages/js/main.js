@@ -110,6 +110,17 @@ var objSetDS = objSetDS || {
         this.onRemoveSelectItemBlockUrlTabs(key);
     },
 
+    loadDomElements: function()
+    {
+        $('[data-toggle="popover"]').popover();
+        $('[data-toggle="tooltip"]').tooltip();
+        $('[data-multiple="select2"]').select2();
+        feather.replace();
+
+        // Version
+        $('#ext_version').text(chrome.runtime.getManifest().version);
+    },
+
     setEvents: function()
     {
         var me = this;
@@ -835,6 +846,7 @@ var objSetDS = objSetDS || {
 
     init: function()
     {
+        this.loadDomElements();
         this.setEvents();
         this.setEventsBlockedUrls();
         this.setEventsTabs();
@@ -851,9 +863,5 @@ var objSetDS = objSetDS || {
  * Init script
  */
 $(document).ready(function(){
-    $('[data-toggle="popover"]').popover();
-    $('[data-toggle="tooltip"]').tooltip();
-    $('[data-multiple="select2"]').select2();
-    feather.replace();
     objSetDS.init();
 });
