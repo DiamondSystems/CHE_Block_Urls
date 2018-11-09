@@ -16,7 +16,8 @@ var objDsBg = objDsBg || {
         allTabs: function(info) {
             objDsBg.addBlockUrlStatistics(info.tabId, info.url);
             return {cancel: true};
-        }
+        },
+        noneUrls: []
     },
 
     getData: function()
@@ -67,15 +68,21 @@ var objDsBg = objDsBg || {
     addUrlTabs: function(url, tabs)
     {
         var x1 = tabs.length,
-            me = objDsBg;
+            me = objDsBg,
+            nuCnt = me.wrCallbacks.noneUrls.length;
 
-        chrome.webRequest.onBeforeRequest.addListener(function(info) {
+        me.wrCallbacks.noneUrls.push(function(info) {
+
+            console.log(tabs);
+
             for (var i=0;i<x1; i++)
                 if (me.tabUrls[tabs[i]].tabUrl === me.tabs[info.tabId].tabUrl)
                     return {cancel: false};
             me.addBlockUrlStatistics(info.tabId, info.url);
             return {cancel: true};
-        }, {urls: [url]}, ["blocking"]);
+        });
+
+        chrome.webRequest.onBeforeRequest.addListener(me.wrCallbacks.noneUrls[nuCnt], {urls: [url]}, ["blocking"]);
     },
 
     addQueryUrl: function(url, tabs)
@@ -172,7 +179,12 @@ var objDsBg = objDsBg || {
 
     removeAllWebRequest: function()
     {
+        // All tabs URLs
         chrome.webRequest.onBeforeRequest.removeListener(objDsBg.wrCallbacks.allTabs);
+
+        // None tabs URLs
+        for (var i=0; i<this.wrCallbacks.noneUrls.length; i++)
+            chrome.webRequest.onBeforeRequest.removeListener(this.wrCallbacks.noneUrls[i]);
     },
 
     tabsQuery: function()
