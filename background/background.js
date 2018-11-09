@@ -45,17 +45,16 @@ var objDsBg = objDsBg || {
         return true;
     },
 
-    getData: function()
+    getData: function(callback)
     {
         var me = objDsBg;
 
         objFunDS.getDb('tabs', function (data, cnt) {
-            if (!cnt)
-                return;
-
             // tabs list
-            for (var kt in data)
-                me.tabUrls[kt] = { tabUrl: data[kt], qUrls: [] };
+            if (cnt) {
+                for (var kt in data)
+                    me.tabUrls[kt] = { tabUrl: data[kt], qUrls: [] };
+            }
 
             // tab urls
             objFunDS.getDb('urls', function (data, cnt) {
@@ -86,6 +85,9 @@ var objDsBg = objDsBg || {
                 // All URLs
                 if (sortUrls.length)
                     chrome.webRequest.onBeforeRequest.addListener(me.wrCallbacks.allTabs, {urls: sortUrls}, ["blocking"]);
+
+                // load callback function
+                callback();
             });
         });
     },
@@ -183,12 +185,25 @@ var objDsBg = objDsBg || {
 
     removeAllWebRequest: function()
     {
+        var me = objDsBg;
+
         // All tabs URLs
-        chrome.webRequest.onBeforeRequest.removeListener(objDsBg.wrCallbacks.allTabs);
+        chrome.webRequest.onBeforeRequest.removeListener(me.wrCallbacks.allTabs);
 
         // None tabs URLs
-        for (var i=0; i<this.wrCallbacks.noneUrls.length; i++)
-            chrome.webRequest.onBeforeRequest.removeListener(this.wrCallbacks.noneUrls[i]);
+        for (var i=0; i<me.wrCallbacks.noneUrls.length; i++)
+            chrome.webRequest.onBeforeRequest.removeListener(me.wrCallbacks.noneUrls[i]);
+
+        // List tabs URLs
+        chrome.tabs.query({}, function(tab) {
+            var i,l=tab.length;
+            for (i=0; i<l; i++) {
+                if (tab[i].id in me.tabs) {
+                    chrome.webRequest.onBeforeRequest.removeListener(me.tabs[tab[i].id]['fn_'+tab[i].id]);
+                    delete me.tabs[tab[i].id];
+                }
+            }
+        });
     },
 
     tabsQuery: function()
@@ -242,15 +257,18 @@ var objDsBg = objDsBg || {
             if (typeof request.optPage !== "string" || request.optPage !== "reload")
                 return;
             me.removeAllWebRequest();
-            me.getData();
-            me.tabsQuery();
+            me.getData(function(){
+                me.tabsQuery();
+            });
         });
     },
 
     init: function()
     {
-        this.getData();
-        this.startLogic();
+        var me = objDsBg;
+        me.getData(function(){
+            me.startLogic();
+        });
     }
 };
 
