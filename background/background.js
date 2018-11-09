@@ -20,6 +20,31 @@ var objDsBg = objDsBg || {
         noneUrls: []
     },
 
+    checkTabUrl: function(url, tabUrl)
+    {
+        var mT1 = url.match(/^(https?):\/\/(.+?)\/(.*?)$/),
+            mT2 = tabUrl.match(/^(https?):\/\/(.+?)\/(.*?)(\*)?$/);
+
+        if (!mT1 || !mT2 || mT1[1] !== mT2[1])
+            return false;
+
+        if (mT2[2] !== '*' && mT1[2] !== mT2[2])
+            return false;
+
+        if (mT1[3] !== mT2[3]) {
+            if (mT1[3] === undefined && mT2[3] !== undefined)
+                return false;
+            else if (mT1[3] !== undefined && mT2[3] === undefined) {
+                if (mT2[4] !== '*')
+                    return false;
+            }
+            else if (mT1[3].indexOf(mT2[3], 0) === -1 || mT2[4] !== '*')
+                return false;
+        }
+
+        return true;
+    },
+
     getData: function()
     {
         var me = objDsBg;
@@ -73,7 +98,7 @@ var objDsBg = objDsBg || {
 
         me.wrCallbacks.noneUrls.push(function(info) {
             for (var i=0;i<x1; i++)
-                if (me.tabUrls[tabs[i]].tabUrl === me.tabs[info.tabId].tabUrl)
+                if (me.checkTabUrl(me.tabs[info.tabId].tabUrl, me.tabUrls[tabs[i]].tabUrl))
                     return {cancel: false};
             me.addBlockUrlStatistics(info.tabId, info.url);
             return {cancel: true};
@@ -122,37 +147,19 @@ var objDsBg = objDsBg || {
         if (!x1)
             return;
 
-        // check query tab url
-        var mT1 = url.match(/^(https?):\/\/(.+?)\/(.*?)$/);
-        if (!mT1)
-            return;
-
         // search blocked url
-        var i,mT2,blockUrls=[];
+        var i,blockUrls=[];
         for (i=0; i<x1; i++)
         {
-            mT2 = this.tabUrls[this.tabUrlsQ[i]].tabUrl.match(/^(https?):\/\/(.+?)\/(.*?)(\*)?$/);
-            if (!mT2 || mT1[1] !== mT2[1] || mT1[2] !== mT2[2])
+            if (! this.checkTabUrl(url, this.tabUrls[this.tabUrlsQ[i]].tabUrl))
                 continue;
-            if (mT1[3] !== mT2[3]) {
-                if (mT1[3] === undefined && mT2[3] !== undefined)
-                    continue;
-                else if (mT1[3] !== undefined && mT2[3] === undefined) {
-                    if (mT2[4] !== '*')
-                        continue;
-                }
-                else if (mT1[3].indexOf(mT2[3], 0) === -1 || mT2[4] !== '*')
-                    continue;
-            }
-            // // Old version
-            // if (this.tabUrls[this.tabUrlsQ[i]].tabUrl !== url)
-            //     continue;
 
             var ids = this.tabUrls[this.tabUrlsQ[i]].qUrls,
                 x2  = ids.length;
             for (var i2=0; i2<x2; i2++)
                 blockUrls.push(this.urls[ids[i2]]);
         }
+
         if (blockUrls.length)
         {
             var fnName = 'fn_'+tabId;
