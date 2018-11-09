@@ -72,9 +72,6 @@ var objDsBg = objDsBg || {
             nuCnt = me.wrCallbacks.noneUrls.length;
 
         me.wrCallbacks.noneUrls.push(function(info) {
-
-            console.log(tabs);
-
             for (var i=0;i<x1; i++)
                 if (me.tabUrls[tabs[i]].tabUrl === me.tabs[info.tabId].tabUrl)
                     return {cancel: false};
