@@ -26,6 +26,7 @@
   },
   "background": {
     "scripts": [
+      "js/functions.js",
       "background/background.js"
     ]
   },
@@ -34,6 +35,7 @@
     "page": "pages/options.html"
   },
   "permissions": [
+    "management",
     "activeTab",
     "storage",
     "tabs",

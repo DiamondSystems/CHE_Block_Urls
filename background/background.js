@@ -12,58 +12,62 @@ var objDsBg = objDsBg || {
     tabs: this.tabs || {},
     storage: chrome.storage.sync,
 
+    wrCallbacks: {
+        allTabs: function(info) {
+            objDsBg.addBlockUrlStatistics(info.tabId, info.url);
+            return {cancel: true};
+        }
+    },
+
     getData: function()
     {
-        var me = this;
-        this.storage.get(['urls','tabs'], function (res) {
-            // check urls list
-            if (typeof res.urls !== "object" || ! Object.keys(res.urls).length)
+        var me = objDsBg;
+
+        objFunDS.getDb('tabs', function (data, cnt) {
+            if (!cnt)
                 return;
 
             // tabs list
-            for (var kt in res.tabs)
-                me.tabUrls[kt] = { tabUrl: res.tabs[kt], qUrls: [] };
+            for (var kt in data)
+                me.tabUrls[kt] = { tabUrl: data[kt], qUrls: [] };
 
-            // get tab urls
-            var sortUrls = [];
-            for (var ku in res.urls)
-            {
-                switch (res.urls[ku].type)
+            // tab urls
+            objFunDS.getDb('urls', function (data, cnt) {
+                if (!cnt)
+                    return;
+
+                var sortUrls = [];
+                for (var ku in data)
                 {
-                    case 'all':
-                        sortUrls.push(res.urls[ku].url);
-                        break;
+                    switch (data[ku].type)
+                    {
+                        case 'all':
+                            sortUrls.push(data[ku].url);
+                            break;
 
-                    case 'not':
-                        me.addUrlTabs(res.urls[ku].url, res.urls[ku].tabs);
-                        break;
+                        case 'none':
+                            me.addUrlTabs(data[ku].url, data[ku].tabs);
+                            break;
 
-                    case 'list':
-                        me.addQueryUrl(res.urls[ku].url, res.urls[ku].tabs);
-                        break;
+                        case 'list':
+                            me.addQueryUrl(data[ku].url, data[ku].tabs);
+                            break;
 
-                    default: continue;
+                        default: continue;
+                    }
+                    delete data[ku];
                 }
-                delete res.urls[ku];
-            }
-            if (sortUrls.length)
-                me.addAllTabs(sortUrls);
+                // All URLs
+                if (sortUrls.length)
+                    chrome.webRequest.onBeforeRequest.addListener(me.wrCallbacks.allTabs, {urls: sortUrls}, ["blocking"]);
+            });
         });
-    },
-
-    addAllTabs: function(urls)
-    {
-        var me = this;
-        chrome.webRequest.onBeforeRequest.addListener(function(info) {
-            me.addBlockUrlStatistics(info.tabId, info.url);
-            return {cancel: true};
-        }, {urls: urls}, ["blocking"]);
     },
 
     addUrlTabs: function(url, tabs)
     {
         var x1 = tabs.length,
-            me = this;
+            me = objDsBg;
 
         chrome.webRequest.onBeforeRequest.addListener(function(info) {
             for (var i=0;i<x1; i++)
@@ -81,8 +85,7 @@ var objDsBg = objDsBg || {
 
         this.urls[key] = url;
 
-        for (var i=0;i<x1; i++)
-        {
+        for (var i=0;i<x1; i++) {
             this.tabUrls[tabs[i]].qUrls.push(key);
             if (this.tabUrlsQ.indexOf(tabs[i]) === -1)
                 this.tabUrlsQ.push(tabs[i]);
@@ -148,11 +151,10 @@ var objDsBg = objDsBg || {
         }
         if (blockUrls.length)
         {
-            var fnName = 'fn_'+tabId,
-                me = this;
+            var fnName = 'fn_'+tabId;
 
             this.tabs[tabId][fnName] = function(info) {
-                me.addBlockUrlStatistics(info.tabId, info.url);
+                objDsBg.addBlockUrlStatistics(info.tabId, info.url);
                 return {cancel: true};
             };
             chrome.webRequest.onBeforeRequest.addListener(this.tabs[tabId][fnName], {urls: blockUrls, tabId: tabId}, ["blocking"]);
@@ -168,9 +170,14 @@ var objDsBg = objDsBg || {
         }
     },
 
+    removeAllWebRequest: function()
+    {
+        chrome.webRequest.onBeforeRequest.removeListener(objDsBg.wrCallbacks.allTabs);
+    },
+
     tabsQuery: function()
     {
-        var me = this;
+        var me = objDsBg;
         chrome.tabs.query({}, function(tab) {
             var i,l=tab.length;
             for (i=0;i<l;i++)
@@ -192,7 +199,7 @@ var objDsBg = objDsBg || {
 
     startLogic: function()
     {
-        var me = this;
+        var me = objDsBg;
 
         // get all tabs
         this.tabsQuery();
@@ -214,7 +221,14 @@ var objDsBg = objDsBg || {
         // set default popup
         chrome.browserAction.setPopup({'popup':'popup/popup.html'});
 
-        //============ TESTs ============//
+        // message listeners
+        chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+            if (typeof request.optPage !== "string" || request.optPage !== "reload")
+                return;
+            me.removeAllWebRequest();
+            me.getData();
+            me.tabsQuery();
+        });
     },
 
     init: function()

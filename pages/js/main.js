@@ -15,6 +15,12 @@ var objSetDS = objSetDS || {
     objTableBlockedUrls:   $('#burls_table_urls > table:eq(0)'),
     objSelectBlockUrlTabs: $('.block-url-tabs-list'),
 
+    setDB: function(objData)
+    {
+        this.storage.set(objData);
+        chrome.runtime.sendMessage({optPage: "reload"});
+    },
+
     getActiveMenuItem: function()
     {
         return $('.sidebar-sticky .nav-link.active').data("menu-item");
@@ -37,10 +43,10 @@ var objSetDS = objSetDS || {
 
     updateBlockUrls: function(key)
     {
-        var me = this;
+        var me = objSetDS;
 
         // Update table rows in the blocked urls page
-        var rows    = this.objTableBlockedUrls.find('span[data-table-tab-key="'+ key +'"]'),
+        var rows    = me.objTableBlockedUrls.find('span[data-table-tab-key="'+ key +'"]'),
             rowsCnt = rows.length;
         if (rowsCnt) {
             objFunDS.getDb('urls', function (data, cnt) {
@@ -60,7 +66,7 @@ var objSetDS = objSetDS || {
                     if (! data[k].tabs.length)
                         data[k].type = 'all';
                 }
-                me.storage.set({ urls:data });
+                me.setDB({ urls:data });
 
                 // Update table rows
                 var arrKeys = [];
@@ -71,15 +77,21 @@ var objSetDS = objSetDS || {
         }
 
         // Remove blocked url tab in the select
-        this.onRemoveSelectItemBlockUrlTabs(key);
+        me.onRemoveSelectItemBlockUrlTabs(key);
     },
 
     loadDomElements: function()
     {
-        $('[data-toggle="popover"]').popover();
-        $('[data-toggle="tooltip"]').tooltip();
+        $('[data-toggle="popover"]').popover();  // popover
+        $('[data-toggle="tooltip"]').tooltip();  // tooltip
+        feather.replace();                       // feather
+
+        // Select2
         $('[data-multiple="select2"]').select2();
-        feather.replace();
+        $('.select2-selection').addClass('custom-select');
+
+        // show blocked urls container
+        $('.content-'+this.getActiveMenuItem()).fadeIn(1000);
 
         // Version
         $('#ext_version').text(chrome.runtime.getManifest().version);
@@ -87,7 +99,7 @@ var objSetDS = objSetDS || {
 
     setEvents: function()
     {
-        var me = this;
+        var me = objSetDS;
 
         // Click left menu bar
         $('.sidebar-sticky .nav-link').click(function(){
@@ -118,7 +130,7 @@ var objSetDS = objSetDS || {
 
         // Remove Tab or Block URL
         var objModalDelUrl = $('#global_modal_removing_url');
-        this.objTable.on('click', 'button[data-target="#global_modal_removing_url"]', function() {
+        me.objTable.on('click', 'button[data-target="#global_modal_removing_url"]', function() {
             objModalDelUrl.find('span.remove-url').html(
                 $(this).parent().parent().parent().children('td:eq(2)').html()
             );
@@ -136,7 +148,7 @@ var objSetDS = objSetDS || {
                 delete data[uKey];
                 var q = {};
                 q[uType] = data;
-                me.storage.set(q);
+                me.setDB(q);
 
                 // Remove row table
                 $('table div[data-action-key="'+ uKey +'"] > button[data-url-type="'+ uType +'"]').closest('tr').fadeOut(500, function() {
@@ -155,7 +167,7 @@ var objSetDS = objSetDS || {
 
     setEventsBlockedUrls: function()
     {
-        var me = this;
+        var me = objSetDS;
 
         var objBU = {
             objUrl:            $('#burls_form_uri'),
@@ -344,7 +356,7 @@ var objSetDS = objSetDS || {
                         type: type,
                         tabs: tabs
                     };
-                    me.storage.set({ urls: data });
+                    me.setDB({ urls: data });
 
                     // add url in table
                     meTab.clearForm();
@@ -382,7 +394,7 @@ var objSetDS = objSetDS || {
         });
 
         // Edit table row
-        this.objTableBlockedUrls.on(this.eventName_ETRBU, function(e, blockUrlKeys) {
+        me.objTableBlockedUrls.on(me.eventName_ETRBU, function(e, blockUrlKeys) {
             objBU.editTableRow(blockUrlKeys);
         });
 
@@ -439,7 +451,7 @@ var objSetDS = objSetDS || {
         });
 
         // Click viewing url data
-        this.objTable.on('click', 'button[data-target="#burls_modal_viewing_urls"]', function() {
+        me.objTable.on('click', 'button[data-target="#burls_modal_viewing_urls"]', function() {
             var uKey = $(this).parent().data('action-key');
 
             objFunDS.getDb(['urls', 'tabs'], function(res) {
@@ -482,7 +494,7 @@ var objSetDS = objSetDS || {
         });
 
         // Click edit url data
-        this.objTable.on('click', 'button[data-target="#burls_modal_edit_urls"]', function() {
+        me.objTable.on('click', 'button[data-target="#burls_modal_edit_urls"]', function() {
             var uKey = $(this).parent().data('action-key');
 
             objBU.errHide();
@@ -561,7 +573,7 @@ var objSetDS = objSetDS || {
                     data[uKey].type = chType;
 
                     // update urls
-                    me.storage.set({ urls:data });
+                    me.setDB({ urls:data });
 
                     // edit table row
                     objBU.editTableRow([uKey]);
@@ -575,7 +587,7 @@ var objSetDS = objSetDS || {
 
     setEventsTabs: function()
     {
-        var me = this;
+        var me = objSetDS;
 
         var objTabs = {
             errHostIsShow: false,
@@ -676,7 +688,7 @@ var objSetDS = objSetDS || {
                     // save tab urls
                     var nKey = objFunDS.keyGenerate(++uCnt);
                     data[nKey] = url;
-                    me.storage.set({ tabs: data });
+                    me.setDB({ tabs: data });
 
                     // add url in table
                     meTab.clearForm();
@@ -814,12 +826,6 @@ var objSetDS = objSetDS || {
         this.setEvents();
         this.setEventsBlockedUrls();
         this.setEventsTabs();
-
-        // Corrected style select2 input
-        $('.select2-selection').addClass('custom-select');
-
-        // show blocked urls container
-        $('.content-'+this.getActiveMenuItem()).fadeIn(1000);
     }
 };
 
