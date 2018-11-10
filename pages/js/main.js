@@ -484,8 +484,11 @@ var objSetDS = objSetDS || {
                                 ]);
                             }
                         }
-                        if (arrUrls.length)
-                            me.addTableRows('#burls_modal_viewing_urls table.tabs-url-table tbody', arrUrls);
+                        if (arrUrls.length) {
+                            var sel = '#burls_modal_viewing_urls table.tabs-url-table tbody';
+                            $(sel).html('');
+                            me.addTableRows(sel, arrUrls);
+                        }
                     }
                 }
                 else
