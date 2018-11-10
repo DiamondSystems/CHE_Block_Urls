@@ -13,6 +13,7 @@ var objSetDS = objSetDS || {
 
     objTable:              $('table'),
     objTableBlockedUrls:   $('#burls_table_urls > table:eq(0)'),
+    objTableTabsUrls:      $('#tabs_table_urls > table:eq(0)'),
     objSelectBlockUrlTabs: $('.block-url-tabs-list'),
 
     setDB: function(objData)
@@ -125,6 +126,39 @@ var objSetDS = objSetDS || {
             else {
                 objForm.stop().slideDown(300);
                 $this.addClass('active');
+            }
+        });
+
+        // Global Search
+        $('#global_search').on('input', function(){
+            var val = $.trim($(this).val()).toLowerCase(),
+                $tB = me.objTableBlockedUrls.find('tbody > tr'),
+                $tT = me.objTableTabsUrls.find('tbody > tr');
+
+            if (val) {
+                $tB.hide();
+                $tT.hide();
+                $tB.each(function(i, el){
+                    var $el = $(el);
+                    if ($el.children('td:eq(1)').text().toLowerCase().indexOf(val) !== -1 ||
+                        $el.children('td:eq(2)').text().toLowerCase().indexOf(val) !== -1 ||
+                        $el.children('td:eq(3)').text().toLowerCase().indexOf(val) !== -1)
+                    {
+                        $el.show();
+                    }
+                });
+                $tT.each(function(i, el){
+                    var $el = $(el);
+                    if ($el.children('td:eq(1)').text().toLowerCase().indexOf(val) !== -1 ||
+                        $el.children('td:eq(2)').text().toLowerCase().indexOf(val) !== -1)
+                    {
+                        $el.show();
+                    }
+                });
+            }
+            else {
+                $tB.show();
+                $tT.show();
             }
         });
 
