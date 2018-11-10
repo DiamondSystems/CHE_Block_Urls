@@ -233,7 +233,6 @@ var objDsBg = objDsBg || {
         var me = objDsBg;
 
         // get all tabs
-        this.tabsQuery();
         chrome.runtime.onInstalled.addListener(function () {
             me.tabsQuery();
         });
@@ -249,6 +248,9 @@ var objDsBg = objDsBg || {
             me.deleteTab(removedTabId);
         });
 
+        // set default popup
+        chrome.browserAction.setPopup({'popup':'popup/popup.html'});
+
         // message listeners
         chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             if (typeof request.optPage !== "string" || request.optPage !== "reload")
@@ -263,12 +265,12 @@ var objDsBg = objDsBg || {
     init: function()
     {
         var me = objDsBg;
+
         me.getData(function(){
-            me.startLogic();
+            this.tabsQuery();
         });
 
-        // set default popup
-        chrome.browserAction.setPopup({'popup':'popup/popup.html'});
+        me.startLogic();
     }
 };
 
