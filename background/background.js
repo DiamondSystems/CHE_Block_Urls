@@ -249,9 +249,6 @@ var objDsBg = objDsBg || {
             me.deleteTab(removedTabId);
         });
 
-        // set default popup
-        chrome.browserAction.setPopup({'popup':'popup/popup.html'});
-
         // message listeners
         chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
             if (typeof request.optPage !== "string" || request.optPage !== "reload")
@@ -269,6 +266,9 @@ var objDsBg = objDsBg || {
         me.getData(function(){
             me.startLogic();
         });
+
+        // set default popup
+        chrome.browserAction.setPopup({'popup':'popup/popup.html'});
     }
 };
 
